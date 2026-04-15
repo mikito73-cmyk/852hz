@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="852 Hz">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<title>852 Hz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&family=Zen+Kaku+Gothic+New:wght@300&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--gold:#c8a96e;--gold2:#e8cfa0;--bg:#0a0a0f;--muted:#6a6560}
+  html,body{
+    height:100%;background:var(--bg);color:#e8e0d0;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:28px;overflow:hidden;
+    /* iOSのノッチ対応 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  body::after{
+    content:'';position:fixed;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(200,169,110,.07) 0%,transparent 70%);
+  }
+
+  /* ── インストールバナー ── */
+  #installBanner{
+    position:fixed;bottom:0;left:0;right:0;
+    background:#111118;border-top:1px solid #222;
+    padding:14px 20px 20px;
+    display:flex;align-items:center;gap:14px;
+    z-index:100;transform:translateY(100%);
+    transition:transform .4s cubic-bezier(.2,.8,.2,1);
+  }
+  #installBanner.show{transform:translateY(0)}
+  #installBanner img{width:48px;height:48px;border-radius:10px;flex-shrink:0}
+  .banner-text{flex:1}
+  .banner-title{font-size:13px;color:#e8e0d0;letter-spacing:1px}
+  .banner-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:1px}
+  .banner-btns{display:flex;gap:8px;flex-shrink:0}
+  .b-install{
+    background:var(--gold);color:#0a0a0f;border:none;
+    font-size:11px;letter-spacing:2px;padding:8px 14px;cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .b-close{
+    background:transparent;color:var(--muted);border:1px solid #333;
+    font-size:11px;letter-spacing:1px;padding:8px 10px;cursor:pointer;
+  }
+
+  /* ── iOS専用インストール案内 ── */
+  #iosBanner{
+    position:fixed;bottom:0;left:0;right:0;
+    background:#111118;border-top:1px solid #222;
+    padding:16px 20px 24px;z-index:100;
+    transform:translateY(100%);transition:transform .4s cubic-bezier(.2,.8,.2,1);
+  }
+  #iosBanner.show{transform:translateY(0)}
+  .ios-title{font-size:12px;color:#e8e0d0;letter-spacing:2px;margin-bottom:10px}
+  .ios-steps{font-size:11px;color:var(--muted);line-height:2;letter-spacing:1px}
+  .ios-steps span{color:var(--gold2)}
+  .ios-close{
+    margin-top:12px;background:transparent;border:1px solid #333;color:var(--muted);
+    font-size:10px;letter-spacing:2px;padding:6px 16px;cursor:pointer;width:100%;
+  }
+
+  /* ── 周波数 ── */
+  .freq{text-align:center}
+  .fn{
+    font-family:'Cormorant Garamond',serif;font-weight:300;
+    font-size:clamp(72px,18vw,130px);line-height:1;color:var(--gold);letter-spacing:-2px;
+  }
+  .fu{
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(14px,3.5vw,22px);letter-spacing:10px;color:var(--gold2);opacity:.7;margin-top:4px;
+  }
+  .fl{font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:12px}
+
+  #stage{display:block}
+
+  /* ── 再生ボタン ── */
+  #playBtn{
+    width:120px;height:120px;border-radius:50%;
+    background:transparent;border:1.5px solid var(--gold);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color:transparent;outline:none;
+    transition:background .3s,transform .15s;position:relative;
+  }
+  #playBtn:active{transform:scale(.92)}
+  #playBtn.on{background:rgba(200,169,110,.14)}
+  #playBtn::before,#playBtn::after{
+    content:'';position:absolute;inset:0;border-radius:50%;
+    border:1px solid var(--gold);opacity:0;pointer-events:none;
+  }
+  #playBtn.on::before{animation:rpl 2.2s ease-out infinite}
+  #playBtn.on::after {animation:rpl 2.2s ease-out infinite .9s}
+  @keyframes rpl{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.4);opacity:0}}
+  .tri{width:0;height:0;border-top:13px solid transparent;border-bottom:13px solid transparent;border-left:21px solid var(--gold);margin-left:5px}
+  .sq{width:18px;height:18px;background:var(--gold);display:none}
+  #playBtn.on .tri{display:none}
+  #playBtn.on .sq{display:block}
+
+  /* ── 音量 ── */
+  .vol{display:flex;flex-direction:column;align-items:center;gap:8px;width:200px}
+  .lbl{font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase}
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:1px;outline:none;cursor:pointer;
+    background:linear-gradient(to right,var(--gold) var(--p,80%),#2a2a2a var(--p,80%));
+  }
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold)}
+
+  /* ── タイマー ── */
+  .timer{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .tbtns{display:flex;gap:6px}
+  .tb{
+    background:transparent;border:1px solid #2a2a2a;color:var(--muted);
+    font-family:'Cormorant Garamond',serif;font-size:13px;padding:5px 12px;
+    cursor:pointer;transition:border-color .2s,color .2s;-webkit-tap-highlight-color:transparent;
+  }
+  .tb.on{border-color:var(--gold);color:var(--gold)}
+  .cd{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold2);letter-spacing:2px;min-height:28px}
+
+  #msg{font-size:10px;color:var(--muted);letter-spacing:2px;min-height:14px}
+
+  /* ── インストールボタン（常時表示） ── */
+  #addBtn{
+    background:transparent;border:1px solid #2a2a2a;color:var(--muted);
+    font-family:'Zen Kaku Gothic New',sans-serif;font-size:10px;
+    letter-spacing:3px;padding:7px 18px;cursor:pointer;
+    transition:border-color .2s,color .2s;-webkit-tap-highlight-color:transparent;
+  }
+  #addBtn:active{border-color:var(--gold);color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="freq">
+  <div class="fn">852</div>
+  <div class="fu">H Z</div>
+  <div class="fl">Solfeggio · 直感の覚醒</div>
+</div>
+
+<canvas id="stage" width="300" height="90"></canvas>
+
+<button id="playBtn">
+  <div class="tri"></div>
+  <div class="sq"></div>
+</button>
+
+<div class="vol">
+  <div class="lbl">Volume</div>
+  <input type="range" id="vol" min="0" max="100" value="80">
+</div>
+
+<div class="timer">
+  <div class="lbl">Timer</div>
+  <div class="tbtns">
+    <button class="tb" data-min="5">5 min</button>
+    <button class="tb" data-min="10">10 min</button>
+    <button class="tb" data-min="20">20 min</button>
+    <button class="tb" data-min="30">30 min</button>
+  </div>
+  <div class="cd" id="cd"></div>
+</div>
+
+<div id="msg">タップして再生</div>
+
+<!-- ホーム画面追加ボタン -->
+<button id="addBtn">＋ ホーム画面に追加</button>
+
+<!-- Android/Chrome 用インストールバナー -->
+<div id="installBanner">
+  <img src="./icons/apple-touch-icon.png" alt="icon">
+  <div class="banner-text">
+    <div class="banner-title">852 Hz をインストール</div>
+    <div class="banner-sub">ホーム画面からすぐ起動できます</div>
+  </div>
+  <div class="banner-btns">
+    <button class="b-install" id="b-install">追加</button>
+    <button class="b-close" id="b-close">✕</button>
+  </div>
+</div>
+
+<!-- iOS Safari 用案内バナー -->
+<div id="iosBanner">
+  <div class="ios-title">ホーム画面に追加する方法</div>
+  <div class="ios-steps">
+    1. 画面下の <span>共有ボタン（□↑）</span> をタップ<br>
+    2. <span>「ホーム画面に追加」</span> を選択<br>
+    3. 右上の <span>「追加」</span> をタップ
+  </div>
+  <button class="ios-close" id="ios-close">閉じる</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  棒人間
+// ══════════════════════════════════════════
+const stg = document.getElementById('stage');
+const sc  = stg.getContext('2d');
+let stickT = 0, isRunning = false;
+
+function getStickPose(t, running) {
+  const speed = running ? 0.18 : 0.08;
+  const phase = t * speed;
+  const cx = 150, cy = running ? 38 : 42;
+  const bobY = running ? Math.sin(phase*2)*4 : Math.sin(phase*2)*1.5;
+  const limbSwing = running ? 32 : 18;
+  const legSwing  = running ? 36 : 20;
+  const rArm = Math.sin(phase)*limbSwing;
+  const lArm = Math.sin(phase+Math.PI)*limbSwing;
+  const rLeg = Math.sin(phase+Math.PI)*legSwing;
+  const lLeg = Math.sin(phase)*legSwing;
+  const kneeOffset = running ? Math.abs(Math.sin(phase))*20 : 0;
+  const toRad = d => d*Math.PI/180;
+  const headR=9, neck={x:cx,y:cy+bobY}, head={x:cx,y:neck.y-headR-2};
+  const shoulder={x:cx,y:neck.y+6}, hip={x:cx,y:shoulder.y+20};
+  const a1=12,a2=11;
+  const rElbow={x:shoulder.x+Math.sin(toRad(rArm))*a1,y:shoulder.y+Math.cos(toRad(rArm))*a1};
+  const rHand ={x:rElbow.x+Math.sin(toRad(rArm+20))*a2,y:rElbow.y+Math.cos(toRad(rArm+20))*a2};
+  const lElbow={x:shoulder.x+Math.sin(toRad(lArm))*a1,y:shoulder.y+Math.cos(toRad(lArm))*a1};
+  const lHand ={x:lElbow.x+Math.sin(toRad(lArm+20))*a2,y:lElbow.y+Math.cos(toRad(lArm+20))*a2};
+  const l1=16,l2=15;
+  const rKnee={x:hip.x+Math.sin(toRad(rLeg))*l1,y:hip.y+Math.cos(toRad(rLeg))*l1-kneeOffset*.3};
+  const rFoot={x:rKnee.x+Math.sin(toRad(rLeg-kneeOffset))*l2,y:rKnee.y+Math.cos(toRad(rLeg-kneeOffset))*l2};
+  const lKnee={x:hip.x+Math.sin(toRad(lLeg))*l1,y:hip.y+Math.cos(toRad(lLeg))*l1-kneeOffset*.3};
+  const lFoot={x:lKnee.x+Math.sin(toRad(lLeg+kneeOffset))*l2,y:lKnee.y+Math.cos(toRad(lLeg+kneeOffset))*l2};
+  return {head,headR,neck,shoulder,hip,rElbow,rHand,lElbow,lHand,rKnee,rFoot,lKnee,lFoot};
+}
+function ln(a,b){sc.beginPath();sc.moveTo(a.x,a.y);sc.lineTo(b.x,b.y);sc.stroke()}
+function drawStick(running){
+  const p=getStickPose(stickT,running);
+  sc.strokeStyle=running?'#c8a96e':'#6a6560';
+  sc.lineWidth=running?2.2:1.8;sc.lineCap='round';sc.lineJoin='round';
+  sc.clearRect(0,0,stg.width,stg.height);
+  sc.beginPath();sc.arc(p.head.x,p.head.y,p.headR,0,Math.PI*2);sc.stroke();
+  ln(p.neck,p.hip);
+  ln(p.shoulder,p.rElbow);ln(p.rElbow,p.rHand);
+  ln(p.shoulder,p.lElbow);ln(p.lElbow,p.lHand);
+  ln(p.hip,p.rKnee);ln(p.rKnee,p.rFoot);
+  ln(p.hip,p.lKnee);ln(p.lKnee,p.lFoot);
+  if(running){
+    sc.strokeStyle='rgba(200,169,110,0.2)';sc.lineWidth=1;
+    sc.beginPath();sc.moveTo(60,78);sc.lineTo(240,78);sc.stroke();
+    sc.strokeStyle='rgba(200,169,110,0.25)';
+    for(let i=0;i<4;i++){
+      const bx=80-(stickT*3+i*30)%120,by=55+i*5;
+      sc.beginPath();sc.moveTo(bx,by);sc.lineTo(bx+18,by);sc.stroke();
+    }
+  } else {
+    sc.strokeStyle='rgba(106,101,96,0.3)';sc.lineWidth=1;
+    sc.beginPath();sc.moveTo(60,78);sc.lineTo(240,78);sc.stroke();
+  }
+}
+(function loop(){stickT++;drawStick(isRunning);requestAnimationFrame(loop)})();
+
+// ══════════════════════════════════════════
+//  音声
+// ══════════════════════════════════════════
+let actx=null,sourceNode=null,gainNode=null,isOn=false;
+let timerEnd=null,timerTick=null,chosenMin=null;
+const FREQ=852,SR=44100,SECS=2;
+
+function makeBuf(ctx){
+  const frames=Math.round(ctx.sampleRate*SECS);
+  const buf=ctx.createBuffer(1,frames,ctx.sampleRate);
+  const d=buf.getChannelData(0);
+  const exactFreq=Math.round(FREQ*SECS)/SECS;
+  for(let i=0;i<frames;i++) d[i]=Math.sin(2*Math.PI*exactFreq*i/ctx.sampleRate);
+  return buf;
+}
+function startSound(){
+  actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:SR});
+  gainNode=actx.createGain();
+  gainNode.gain.value=document.getElementById('vol').value/100*0.7;
+  gainNode.connect(actx.destination);
+  sourceNode=actx.createBufferSource();
+  sourceNode.buffer=makeBuf(actx);
+  sourceNode.loop=true;
+  sourceNode.connect(gainNode);
+  actx.resume().then(function(){
+    sourceNode.start(0);
+    document.getElementById('msg').textContent='再生中 ♪  852 Hz';
+  });
+}
+function stopSound(){
+  if(!actx)return;
+  try{sourceNode.stop(0)}catch(e){}
+  try{actx.close()}catch(e){}
+  actx=null;sourceNode=null;gainNode=null;
+  document.getElementById('msg').textContent='停止';
+}
+
+document.getElementById('playBtn').addEventListener('click',function(){
+  if(isOn){
+    isOn=false;this.classList.remove('on');isRunning=false;
+    stopTimer();stopSound();
+  } else {
+    isOn=true;this.classList.add('on');isRunning=true;
+    startSound();if(chosenMin)startTimer(chosenMin);
+  }
+});
+
+const volEl=document.getElementById('vol');
+volEl.addEventListener('input',function(){
+  this.style.setProperty('--p',this.value+'%');
+  if(gainNode)gainNode.gain.value=this.value/100*0.7;
+});
+volEl.style.setProperty('--p','80%');
+
+function startTimer(min){
+  stopTimer();
+  timerEnd=Date.now()+min*60000;
+  timerTick=setInterval(function(){
+    var rem=timerEnd-Date.now();
+    if(rem<=0){
+      stopTimer();isOn=false;isRunning=false;
+      document.getElementById('playBtn').classList.remove('on');
+      stopSound();return;
+    }
+    var m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);
+    document.getElementById('cd').textContent=('0'+m).slice(-2)+' : '+('0'+s).slice(-2);
+  },500);
+}
+function stopTimer(){
+  clearInterval(timerTick);timerTick=null;timerEnd=null;
+  document.getElementById('cd').textContent='';
+}
+document.querySelectorAll('.tb').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var min=parseInt(this.dataset.min);
+    document.querySelectorAll('.tb').forEach(function(b){b.classList.remove('on')});
+    if(chosenMin===min){chosenMin=null;stopTimer();}
+    else{
+      this.classList.add('on');chosenMin=min;
+      if(isOn)startTimer(min);
+      else document.getElementById('cd').textContent=('0'+min).slice(-2)+' : 00';
+    }
+  });
+});
+
+// ══════════════════════════════════════════
+//  PWA インストール
+// ══════════════════════════════════════════
+var deferredPrompt = null;
+var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+var isInStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+// Android/Chrome: beforeinstallprompt をキャッチ
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredPrompt = e;
+  // バナーを少し遅らせて表示
+  setTimeout(function(){ document.getElementById('installBanner').classList.add('show'); }, 1500);
+});
+
+// 「追加」ボタン押下
+document.getElementById('b-install').addEventListener('click', function(){
+  document.getElementById('installBanner').classList.remove('show');
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(){ deferredPrompt=null; });
+  }
+});
+document.getElementById('b-close').addEventListener('click', function(){
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// iOS: 案内バナーを表示
+document.getElementById('ios-close').addEventListener('click', function(){
+  document.getElementById('iosBanner').classList.remove('show');
+});
+
+// 「ホーム画面に追加」ボタン
+document.getElementById('addBtn').addEventListener('click', function(){
+  if(isInStandalone){
+    alert('すでにホーム画面に追加されています');
+    return;
+  }
+  if(deferredPrompt){
+    // Android/Chrome
+    document.getElementById('installBanner').classList.add('show');
+  } else if(isIOS){
+    // iOS Safari
+    document.getElementById('iosBanner').classList.add('show');
+  } else {
+    alert('ブラウザのメニューから「ホーム画面に追加」を選択してください');
+  }
+});
+
+// ══════════════════════════════════════════
+//  Service Worker 登録
+// ══════════════════════════════════════════
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(function(reg){
+    console.log('SW registered:', reg.scope);
+  }).catch(function(e){
+    console.log('SW error:', e);
+  });
+}
+</script>
+</body>
+</html>
