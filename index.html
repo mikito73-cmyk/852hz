@@ -5,403 +5,491 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="852 Hz">
+<meta name="apple-mobile-web-app-title" content="Solfeggio">
 <meta name="theme-color" content="#0a0a0f">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<title>852 Hz</title>
+<title>Solfeggio Hz</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&family=Zen+Kaku+Gothic+New:wght@300&display=swap');
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  :root{--gold:#c8a96e;--gold2:#e8cfa0;--bg:#0a0a0f;--muted:#6a6560}
-  html,body{
-    height:100%;background:var(--bg);color:#e8e0d0;
-    font-family:'Zen Kaku Gothic New',sans-serif;
-    display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:28px;overflow:hidden;
-    /* iOSのノッチ対応 */
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
-  body::after{
-    content:'';position:fixed;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(200,169,110,.07) 0%,transparent 70%);
-  }
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Zen+Kaku+Gothic+New:wght@300&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--gold:#c8a96e;--gold2:#e8cfa0;--bg:#0a0a0f;--muted:#5a5560;--fc:#c8a96e}
+html{height:100%;background:var(--bg)}
+body{
+  min-height:100%;background:var(--bg);color:#e8e0d0;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  display:flex;flex-direction:column;align-items:center;
+  padding:max(env(safe-area-inset-top),20px) 16px max(env(safe-area-inset-bottom),16px);
+  overflow-x:hidden;overflow-y:auto;
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 80% 50% at 50% 30%,rgba(200,169,110,.06) 0%,transparent 65%);
+}
+.z{position:relative;z-index:1;width:100%;max-width:420px}
 
-  /* ── インストールバナー ── */
-  #installBanner{
-    position:fixed;bottom:0;left:0;right:0;
-    background:#111118;border-top:1px solid #222;
-    padding:14px 20px 20px;
-    display:flex;align-items:center;gap:14px;
-    z-index:100;transform:translateY(100%);
-    transition:transform .4s cubic-bezier(.2,.8,.2,1);
-  }
-  #installBanner.show{transform:translateY(0)}
-  #installBanner img{width:48px;height:48px;border-radius:10px;flex-shrink:0}
-  .banner-text{flex:1}
-  .banner-title{font-size:13px;color:#e8e0d0;letter-spacing:1px}
-  .banner-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:1px}
-  .banner-btns{display:flex;gap:8px;flex-shrink:0}
-  .b-install{
-    background:var(--gold);color:#0a0a0f;border:none;
-    font-size:11px;letter-spacing:2px;padding:8px 14px;cursor:pointer;
-    font-family:'Zen Kaku Gothic New',sans-serif;
-  }
-  .b-close{
-    background:transparent;color:var(--muted);border:1px solid #333;
-    font-size:11px;letter-spacing:1px;padding:8px 10px;cursor:pointer;
-  }
+/* 周波数タブ */
+.freq-tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin:20px 0 0}
+.ft{
+  background:transparent;border:1px solid #1e1e1e;color:var(--muted);
+  font-family:'Cormorant Garamond',serif;font-size:14px;
+  padding:6px 9px;cursor:pointer;transition:all .2s;
+  -webkit-tap-highlight-color:transparent;line-height:1.2;text-align:center;min-width:48px;
+}
+.ft small{display:block;font-size:9px;letter-spacing:.5px;margin-top:1px;opacity:.7;font-family:'Zen Kaku Gothic New',sans-serif}
+.ft.on{border-color:var(--fc);color:var(--fc);background:rgba(200,169,110,.08)}
 
-  /* ── iOS専用インストール案内 ── */
-  #iosBanner{
-    position:fixed;bottom:0;left:0;right:0;
-    background:#111118;border-top:1px solid #222;
-    padding:16px 20px 24px;z-index:100;
-    transform:translateY(100%);transition:transform .4s cubic-bezier(.2,.8,.2,1);
-  }
-  #iosBanner.show{transform:translateY(0)}
-  .ios-title{font-size:12px;color:#e8e0d0;letter-spacing:2px;margin-bottom:10px}
-  .ios-steps{font-size:11px;color:var(--muted);line-height:2;letter-spacing:1px}
-  .ios-steps span{color:var(--gold2)}
-  .ios-close{
-    margin-top:12px;background:transparent;border:1px solid #333;color:var(--muted);
-    font-size:10px;letter-spacing:2px;padding:6px 16px;cursor:pointer;width:100%;
-  }
+/* 周波数大表示 */
+.freq-hero{text-align:center;margin:16px 0 0}
+.fn{
+  font-family:'Cormorant Garamond',serif;font-weight:300;
+  font-size:clamp(60px,15vw,100px);line-height:1;
+  color:var(--fc);letter-spacing:-2px;transition:color .4s;
+}
+.fu{font-family:'Cormorant Garamond',serif;font-size:clamp(12px,3vw,18px);letter-spacing:10px;color:var(--gold2);opacity:.6;margin-top:4px}
+.fl{font-size:10px;letter-spacing:2px;color:var(--muted);margin-top:8px;min-height:14px}
 
-  /* ── 周波数 ── */
-  .freq{text-align:center}
-  .fn{
-    font-family:'Cormorant Garamond',serif;font-weight:300;
-    font-size:clamp(72px,18vw,130px);line-height:1;color:var(--gold);letter-spacing:-2px;
-  }
-  .fu{
-    font-family:'Cormorant Garamond',serif;
-    font-size:clamp(14px,3.5vw,22px);letter-spacing:10px;color:var(--gold2);opacity:.7;margin-top:4px;
-  }
-  .fl{font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:12px}
+/* 棒人間 */
+#stage{display:block;margin:6px auto}
 
-  #stage{display:block}
+/* 再生ボタン */
+.play-wrap{display:flex;flex-direction:column;align-items:center;margin:6px 0}
+#playBtn{
+  width:106px;height:106px;border-radius:50%;background:transparent;
+  border:1.5px solid var(--gold);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;outline:none;
+  transition:background .3s,transform .15s;position:relative;
+}
+#playBtn:active{transform:scale(.92)}
+#playBtn.on{background:rgba(200,169,110,.13)}
+#playBtn::before,#playBtn::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  border:1px solid var(--gold);opacity:0;pointer-events:none;
+}
+#playBtn.on::before{animation:rpl 2.2s ease-out infinite}
+#playBtn.on::after{animation:rpl 2.2s ease-out infinite .85s}
+@keyframes rpl{0%{transform:scale(1);opacity:.5}100%{transform:scale(2.2);opacity:0}}
+.tri{width:0;height:0;border-top:12px solid transparent;border-bottom:12px solid transparent;border-left:18px solid var(--gold);margin-left:4px}
+.sq{width:16px;height:16px;background:var(--gold);display:none}
+#playBtn.on .tri{display:none}
+#playBtn.on .sq{display:block}
+#msg{font-size:10px;color:var(--muted);letter-spacing:2px;min-height:14px;margin-top:6px;text-align:center}
 
-  /* ── 再生ボタン ── */
-  #playBtn{
-    width:120px;height:120px;border-radius:50%;
-    background:transparent;border:1.5px solid var(--gold);
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
-    -webkit-tap-highlight-color:transparent;outline:none;
-    transition:background .3s,transform .15s;position:relative;
-  }
-  #playBtn:active{transform:scale(.92)}
-  #playBtn.on{background:rgba(200,169,110,.14)}
-  #playBtn::before,#playBtn::after{
-    content:'';position:absolute;inset:0;border-radius:50%;
-    border:1px solid var(--gold);opacity:0;pointer-events:none;
-  }
-  #playBtn.on::before{animation:rpl 2.2s ease-out infinite}
-  #playBtn.on::after {animation:rpl 2.2s ease-out infinite .9s}
-  @keyframes rpl{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.4);opacity:0}}
-  .tri{width:0;height:0;border-top:13px solid transparent;border-bottom:13px solid transparent;border-left:21px solid var(--gold);margin-left:5px}
-  .sq{width:18px;height:18px;background:var(--gold);display:none}
-  #playBtn.on .tri{display:none}
-  #playBtn.on .sq{display:block}
+/* パネル共通 */
+.panel{width:100%;max-width:420px;border:1px solid #1a1a1a;padding:14px 14px 16px;margin-top:12px}
+.ptitle{font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
 
-  /* ── 音量 ── */
-  .vol{display:flex;flex-direction:column;align-items:center;gap:8px;width:200px}
-  .lbl{font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase}
-  input[type=range]{
-    -webkit-appearance:none;width:100%;height:1px;outline:none;cursor:pointer;
-    background:linear-gradient(to right,var(--gold) var(--p,80%),#2a2a2a var(--p,80%));
-  }
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold)}
+/* 音量 */
+.lbl{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.vol-row{display:flex;align-items:center;gap:10px}
+.vi{font-size:11px;color:var(--muted)}
+input[type=range]{
+  -webkit-appearance:none;flex:1;height:1px;outline:none;cursor:pointer;
+  background:linear-gradient(to right,var(--gold) var(--p,75%),#252525 var(--p,75%));
+}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--gold)}
 
-  /* ── タイマー ── */
-  .timer{display:flex;flex-direction:column;align-items:center;gap:8px}
-  .tbtns{display:flex;gap:6px}
-  .tb{
-    background:transparent;border:1px solid #2a2a2a;color:var(--muted);
-    font-family:'Cormorant Garamond',serif;font-size:13px;padding:5px 12px;
-    cursor:pointer;transition:border-color .2s,color .2s;-webkit-tap-highlight-color:transparent;
-  }
-  .tb.on{border-color:var(--gold);color:var(--gold)}
-  .cd{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold2);letter-spacing:2px;min-height:28px}
+/* BGMグリッド */
+.bgm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.bb{
+  background:transparent;border:1px solid #1e1e1e;color:var(--muted);
+  font-family:'Zen Kaku Gothic New',sans-serif;font-size:11px;
+  padding:9px 8px;cursor:pointer;transition:all .2s;
+  -webkit-tap-highlight-color:transparent;text-align:left;line-height:1.5;
+}
+.bb b{display:block;color:#b8b0a8;font-size:12px;font-weight:300}
+.bb small{display:block;font-size:10px;color:var(--muted);margin-top:1px}
+.bb.on{border-color:var(--gold);background:rgba(200,169,110,.07)}
+.bb.on b{color:var(--gold)}
 
-  #msg{font-size:10px;color:var(--muted);letter-spacing:2px;min-height:14px}
+/* タイマー */
+.tbtns{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.tb{
+  background:transparent;border:1px solid #1e1e1e;color:var(--muted);
+  font-family:'Cormorant Garamond',serif;font-size:13px;padding:5px 11px;
+  cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;
+}
+.tb.on{border-color:var(--gold);color:var(--gold)}
+.cd{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold2);letter-spacing:2px;min-height:28px;margin-top:8px;text-align:center}
 
-  /* ── インストールボタン（常時表示） ── */
-  #addBtn{
-    background:transparent;border:1px solid #2a2a2a;color:var(--muted);
-    font-family:'Zen Kaku Gothic New',sans-serif;font-size:10px;
-    letter-spacing:3px;padding:7px 18px;cursor:pointer;
-    transition:border-color .2s,color .2s;-webkit-tap-highlight-color:transparent;
-  }
-  #addBtn:active{border-color:var(--gold);color:var(--gold)}
+/* フッター */
+.foot{display:flex;gap:8px;margin:16px 0 4px;justify-content:center}
+.fbtn{
+  background:transparent;border:1px solid #1e1e1e;color:var(--muted);
+  font-family:'Zen Kaku Gothic New',sans-serif;font-size:10px;
+  letter-spacing:2px;padding:7px 16px;cursor:pointer;transition:all .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.fbtn:active{border-color:var(--gold);color:var(--gold)}
+
+/* iOSバナー */
+#iosBanner{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#111118;border-top:1px solid #222;
+  padding:16px 20px 28px;
+  transform:translateY(100%);transition:transform .4s cubic-bezier(.2,.8,.2,1);
+}
+#iosBanner.show{transform:translateY(0)}
+.iosT{font-size:12px;color:#e8e0d0;letter-spacing:2px;margin-bottom:10px}
+.iosS{font-size:11px;color:var(--muted);line-height:2.2;letter-spacing:1px}
+.iosS span{color:var(--gold2)}
+.iosX{margin-top:12px;background:transparent;border:1px solid #333;color:var(--muted);font-size:10px;letter-spacing:2px;padding:7px 16px;cursor:pointer;width:100%}
 </style>
 </head>
 <body>
 
-<div class="freq">
-  <div class="fn">852</div>
+<!-- 周波数タブ -->
+<div class="freq-tabs z" id="freqTabs"></div>
+
+<!-- 周波数表示 -->
+<div class="freq-hero z">
+  <div class="fn" id="fnNum">852</div>
   <div class="fu">H Z</div>
-  <div class="fl">Solfeggio · 直感の覚醒</div>
+  <div class="fl" id="fnLabel">直感の覚醒 · Third Eye</div>
 </div>
 
-<canvas id="stage" width="300" height="90"></canvas>
-
-<button id="playBtn">
-  <div class="tri"></div>
-  <div class="sq"></div>
-</button>
-
-<div class="vol">
-  <div class="lbl">Volume</div>
-  <input type="range" id="vol" min="0" max="100" value="80">
+<!-- 棒人間 -->
+<div class="z" style="max-width:420px">
+  <canvas id="stage" width="280" height="80"></canvas>
 </div>
 
-<div class="timer">
-  <div class="lbl">Timer</div>
+<!-- 再生ボタン -->
+<div class="play-wrap z">
+  <button id="playBtn"><div class="tri"></div><div class="sq"></div></button>
+  <div id="msg">タップして再生</div>
+</div>
+
+<!-- トーン音量 -->
+<div class="panel z">
+  <div class="ptitle">Tone Volume</div>
+  <div class="vol-row">
+    <span class="vi">🔇</span>
+    <input type="range" id="volTone" min="0" max="100" value="75">
+    <span class="vi">🔊</span>
+  </div>
+</div>
+
+<!-- BGM -->
+<div class="panel z">
+  <div class="ptitle">Background Music</div>
+  <div class="bgm-grid" id="bgmGrid"></div>
+  <div style="margin-top:12px">
+    <div class="lbl">BGM Volume</div>
+    <div class="vol-row">
+      <span class="vi">🔇</span>
+      <input type="range" id="volBgm" min="0" max="100" value="40">
+      <span class="vi">🔊</span>
+    </div>
+  </div>
+</div>
+
+<!-- タイマー -->
+<div class="panel z">
+  <div class="ptitle">Timer</div>
   <div class="tbtns">
     <button class="tb" data-min="5">5 min</button>
     <button class="tb" data-min="10">10 min</button>
     <button class="tb" data-min="20">20 min</button>
     <button class="tb" data-min="30">30 min</button>
+    <button class="tb" data-min="60">60 min</button>
   </div>
   <div class="cd" id="cd"></div>
 </div>
 
-<div id="msg">タップして再生</div>
-
-<!-- ホーム画面追加ボタン -->
-<button id="addBtn">＋ ホーム画面に追加</button>
-
-<!-- Android/Chrome 用インストールバナー -->
-<div id="installBanner">
-  <img src="./icons/apple-touch-icon.png" alt="icon">
-  <div class="banner-text">
-    <div class="banner-title">852 Hz をインストール</div>
-    <div class="banner-sub">ホーム画面からすぐ起動できます</div>
-  </div>
-  <div class="banner-btns">
-    <button class="b-install" id="b-install">追加</button>
-    <button class="b-close" id="b-close">✕</button>
-  </div>
+<!-- フッター -->
+<div class="foot z">
+  <button class="fbtn" id="addBtn">＋ ホーム画面に追加</button>
 </div>
 
-<!-- iOS Safari 用案内バナー -->
+<!-- iOSバナー -->
 <div id="iosBanner">
-  <div class="ios-title">ホーム画面に追加する方法</div>
-  <div class="ios-steps">
+  <div class="iosT">ホーム画面に追加する方法</div>
+  <div class="iosS">
     1. 画面下の <span>共有ボタン（□↑）</span> をタップ<br>
     2. <span>「ホーム画面に追加」</span> を選択<br>
     3. 右上の <span>「追加」</span> をタップ
   </div>
-  <button class="ios-close" id="ios-close">閉じる</button>
+  <button class="iosX" id="iosClose">閉じる</button>
 </div>
 
 <script>
-// ══════════════════════════════════════════
-//  棒人間
-// ══════════════════════════════════════════
-const stg = document.getElementById('stage');
-const sc  = stg.getContext('2d');
-let stickT = 0, isRunning = false;
+// ══ ソルフェジオ周波数 ══════════════════════
+var FREQS=[
+  {hz:174, name:'解放',  desc:'痛みの解放',         color:'#7788bb'},
+  {hz:285, name:'修復',  desc:'組織の再生',          color:'#77aa99'},
+  {hz:396, name:'罪責',  desc:'恐れ・罪悪感から解放', color:'#aa7777'},
+  {hz:417, name:'変容',  desc:'変化の促進',          color:'#cc9955'},
+  {hz:528, name:'奇跡',  desc:'愛の周波数・DNA修復',  color:'#77aa55'},
+  {hz:639, name:'繋がり',desc:'人間関係の調和',       color:'#5588bb'},
+  {hz:741, name:'覚醒',  desc:'表現・解毒',          color:'#8855aa'},
+  {hz:852, name:'直感',  desc:'直感の覚醒',          color:'#c8a96e'},
+  {hz:963, name:'神聖',  desc:'高次元との繋がり',     color:'#ccbbaa'},
+];
+var fi=7; // 852Hz
 
-function getStickPose(t, running) {
-  const speed = running ? 0.18 : 0.08;
-  const phase = t * speed;
-  const cx = 150, cy = running ? 38 : 42;
-  const bobY = running ? Math.sin(phase*2)*4 : Math.sin(phase*2)*1.5;
-  const limbSwing = running ? 32 : 18;
-  const legSwing  = running ? 36 : 20;
-  const rArm = Math.sin(phase)*limbSwing;
-  const lArm = Math.sin(phase+Math.PI)*limbSwing;
-  const rLeg = Math.sin(phase+Math.PI)*legSwing;
-  const lLeg = Math.sin(phase)*legSwing;
-  const kneeOffset = running ? Math.abs(Math.sin(phase))*20 : 0;
-  const toRad = d => d*Math.PI/180;
-  const headR=9, neck={x:cx,y:cy+bobY}, head={x:cx,y:neck.y-headR-2};
-  const shoulder={x:cx,y:neck.y+6}, hip={x:cx,y:shoulder.y+20};
-  const a1=12,a2=11;
-  const rElbow={x:shoulder.x+Math.sin(toRad(rArm))*a1,y:shoulder.y+Math.cos(toRad(rArm))*a1};
-  const rHand ={x:rElbow.x+Math.sin(toRad(rArm+20))*a2,y:rElbow.y+Math.cos(toRad(rArm+20))*a2};
-  const lElbow={x:shoulder.x+Math.sin(toRad(lArm))*a1,y:shoulder.y+Math.cos(toRad(lArm))*a1};
-  const lHand ={x:lElbow.x+Math.sin(toRad(lArm+20))*a2,y:lElbow.y+Math.cos(toRad(lArm+20))*a2};
-  const l1=16,l2=15;
-  const rKnee={x:hip.x+Math.sin(toRad(rLeg))*l1,y:hip.y+Math.cos(toRad(rLeg))*l1-kneeOffset*.3};
-  const rFoot={x:rKnee.x+Math.sin(toRad(rLeg-kneeOffset))*l2,y:rKnee.y+Math.cos(toRad(rLeg-kneeOffset))*l2};
-  const lKnee={x:hip.x+Math.sin(toRad(lLeg))*l1,y:hip.y+Math.cos(toRad(lLeg))*l1-kneeOffset*.3};
-  const lFoot={x:lKnee.x+Math.sin(toRad(lLeg+kneeOffset))*l2,y:lKnee.y+Math.cos(toRad(lLeg+kneeOffset))*l2};
-  return {head,headR,neck,shoulder,hip,rElbow,rHand,lElbow,lHand,rKnee,rFoot,lKnee,lFoot};
+// ══ BGM定義 ════════════════════════════════
+var BGMS=[
+  {id:'none',  name:'なし',        desc:'BGMオフ'},
+  {id:'rain',  name:'🌧 雨音',     desc:'自然・リラックス'},
+  {id:'river', name:'🏞 川の音',   desc:'自然・集中'},
+  {id:'wave',  name:'🌊 波音',     desc:'自然・瞑想'},
+  {id:'white', name:'⬜ ホワイトノイズ', desc:'集中・睡眠'},
+  {id:'brown', name:'🟫 ブラウンノイズ', desc:'深い集中'},
+  {id:'bowl',  name:'🔔 シンギングボウル',desc:'瞑想・チャクラ'},
+  {id:'forest',name:'🌲 森の音',   desc:'自然・癒し'},
+];
+var curBgm='none';
+
+// ══ 周波数タブ生成 ══════════════════════════
+var tabWrap=document.getElementById('freqTabs');
+FREQS.forEach(function(f,i){
+  var b=document.createElement('button');
+  b.className='ft'+(i===fi?' on':'');
+  b.innerHTML='<b>'+f.hz+'</b><small>'+f.name+'</small>';
+  b.addEventListener('click',function(){
+    fi=i;
+    document.querySelectorAll('.ft').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    applyFreq();
+    if(isOn){stopTone();startTone();}
+    if(isOn&&curBgm==='bowl'){stopBgm();startBgm('bowl');}
+  });
+  tabWrap.appendChild(b);
+});
+function applyFreq(){
+  var f=FREQS[fi];
+  document.getElementById('fnNum').textContent=f.hz;
+  document.getElementById('fnNum').style.color=f.color;
+  document.getElementById('fnLabel').textContent=f.name+' · '+f.desc;
+  document.documentElement.style.setProperty('--fc',f.color);
 }
-function ln(a,b){sc.beginPath();sc.moveTo(a.x,a.y);sc.lineTo(b.x,b.y);sc.stroke()}
-function drawStick(running){
-  const p=getStickPose(stickT,running);
-  sc.strokeStyle=running?'#c8a96e':'#6a6560';
-  sc.lineWidth=running?2.2:1.8;sc.lineCap='round';sc.lineJoin='round';
+applyFreq();
+
+// ══ BGMボタン生成 ═══════════════════════════
+var bgmWrap=document.getElementById('bgmGrid');
+BGMS.forEach(function(b){
+  var btn=document.createElement('button');
+  btn.className='bb'+(b.id==='none'?' on':'');
+  btn.dataset.id=b.id;
+  btn.innerHTML='<b>'+b.name+'</b><small>'+b.desc+'</small>';
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.bb').forEach(function(x){x.classList.remove('on');});
+    btn.classList.add('on');
+    curBgm=b.id;
+    if(isOn){stopBgm();if(curBgm!=='none')startBgm(curBgm);}
+  });
+  bgmWrap.appendChild(btn);
+});
+
+// ══ 棒人間 ══════════════════════════════════
+var stg=document.getElementById('stage'),sc=stg.getContext('2d');
+var sT=0,isRun=false;
+function pose(t,run){
+  var spd=run?.18:.08,ph=t*spd,cx=140,cy=run?34:39;
+  var by=run?Math.sin(ph*2)*4:Math.sin(ph*2)*1.5;
+  var ls=run?32:18,lgs=run?36:20;
+  var rA=Math.sin(ph)*ls,lA=Math.sin(ph+Math.PI)*ls;
+  var rL=Math.sin(ph+Math.PI)*lgs,lL=Math.sin(ph)*lgs;
+  var ko=run?Math.abs(Math.sin(ph))*20:0;
+  var r=function(d){return d*Math.PI/180;};
+  var hR=9,nk={x:cx,y:cy+by},hd={x:cx,y:nk.y-hR-2};
+  var sh={x:cx,y:nk.y+6},hp={x:cx,y:sh.y+20};
+  var a1=12,a2=11,l1=16,l2=15;
+  var rE={x:sh.x+Math.sin(r(rA))*a1,y:sh.y+Math.cos(r(rA))*a1};
+  var rH={x:rE.x+Math.sin(r(rA+20))*a2,y:rE.y+Math.cos(r(rA+20))*a2};
+  var lE={x:sh.x+Math.sin(r(lA))*a1,y:sh.y+Math.cos(r(lA))*a1};
+  var lH={x:lE.x+Math.sin(r(lA+20))*a2,y:lE.y+Math.cos(r(lA+20))*a2};
+  var rK={x:hp.x+Math.sin(r(rL))*l1,y:hp.y+Math.cos(r(rL))*l1-ko*.3};
+  var rF={x:rK.x+Math.sin(r(rL-ko))*l2,y:rK.y+Math.cos(r(rL-ko))*l2};
+  var lK={x:hp.x+Math.sin(r(lL))*l1,y:hp.y+Math.cos(r(lL))*l1-ko*.3};
+  var lF={x:lK.x+Math.sin(r(lL+ko))*l2,y:lK.y+Math.cos(r(lL+ko))*l2};
+  return{hd:hd,hR:hR,nk:nk,sh:sh,hp:hp,rE:rE,rH:rH,lE:lE,lH:lH,rK:rK,rF:rF,lK:lK,lF:lF};
+}
+function ln(a,b){sc.beginPath();sc.moveTo(a.x,a.y);sc.lineTo(b.x,b.y);sc.stroke();}
+function drawS(run){
+  var p=pose(sT,run);
+  sc.strokeStyle=run?FREQS[fi].color:'#3e3a44';
+  sc.lineWidth=run?2.2:1.8;sc.lineCap='round';sc.lineJoin='round';
   sc.clearRect(0,0,stg.width,stg.height);
-  sc.beginPath();sc.arc(p.head.x,p.head.y,p.headR,0,Math.PI*2);sc.stroke();
-  ln(p.neck,p.hip);
-  ln(p.shoulder,p.rElbow);ln(p.rElbow,p.rHand);
-  ln(p.shoulder,p.lElbow);ln(p.lElbow,p.lHand);
-  ln(p.hip,p.rKnee);ln(p.rKnee,p.rFoot);
-  ln(p.hip,p.lKnee);ln(p.lKnee,p.lFoot);
-  if(running){
-    sc.strokeStyle='rgba(200,169,110,0.2)';sc.lineWidth=1;
-    sc.beginPath();sc.moveTo(60,78);sc.lineTo(240,78);sc.stroke();
-    sc.strokeStyle='rgba(200,169,110,0.25)';
-    for(let i=0;i<4;i++){
-      const bx=80-(stickT*3+i*30)%120,by=55+i*5;
-      sc.beginPath();sc.moveTo(bx,by);sc.lineTo(bx+18,by);sc.stroke();
-    }
+  sc.beginPath();sc.arc(p.hd.x,p.hd.y,p.hR,0,Math.PI*2);sc.stroke();
+  ln(p.nk,p.hp);
+  ln(p.sh,p.rE);ln(p.rE,p.rH);ln(p.sh,p.lE);ln(p.lE,p.lH);
+  ln(p.hp,p.rK);ln(p.rK,p.rF);ln(p.hp,p.lK);ln(p.lK,p.lF);
+  if(run){
+    sc.strokeStyle='rgba(200,169,110,.18)';sc.lineWidth=1;
+    sc.beginPath();sc.moveTo(30,70);sc.lineTo(250,70);sc.stroke();
+    sc.strokeStyle='rgba(200,169,110,.2)';
+    for(var i=0;i<4;i++){var bx=60-(sT*3+i*30)%110,by=48+i*5;sc.beginPath();sc.moveTo(bx,by);sc.lineTo(bx+15,by);sc.stroke();}
   } else {
-    sc.strokeStyle='rgba(106,101,96,0.3)';sc.lineWidth=1;
-    sc.beginPath();sc.moveTo(60,78);sc.lineTo(240,78);sc.stroke();
+    sc.strokeStyle='rgba(70,65,75,.35)';sc.lineWidth=1;
+    sc.beginPath();sc.moveTo(30,70);sc.lineTo(250,70);sc.stroke();
   }
 }
-(function loop(){stickT++;drawStick(isRunning);requestAnimationFrame(loop)})();
+(function loop(){sT++;drawS(isRun);requestAnimationFrame(loop);})();
 
-// ══════════════════════════════════════════
-//  音声
-// ══════════════════════════════════════════
-let actx=null,sourceNode=null,gainNode=null,isOn=false;
-let timerEnd=null,timerTick=null,chosenMin=null;
-const FREQ=852,SR=44100,SECS=2;
+// ══ Audio ═══════════════════════════════════
+var actx=null,tSrc=null,tGain=null,bgGain=null,bgNodes=[];
+var isOn=false,SR=44100;
+function getCtx(){
+  if(!actx||actx.state==='closed') actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:SR});
+  return actx;
+}
 
-function makeBuf(ctx){
-  const frames=Math.round(ctx.sampleRate*SECS);
-  const buf=ctx.createBuffer(1,frames,ctx.sampleRate);
-  const d=buf.getChannelData(0);
-  const exactFreq=Math.round(FREQ*SECS)/SECS;
-  for(let i=0;i<frames;i++) d[i]=Math.sin(2*Math.PI*exactFreq*i/ctx.sampleRate);
+// トーン
+function makeBuf(ctx,hz){
+  var sec=2,fr=Math.round(ctx.sampleRate*sec),buf=ctx.createBuffer(1,fr,ctx.sampleRate),d=buf.getChannelData(0);
+  var ef=Math.round(hz*sec)/sec;
+  for(var i=0;i<fr;i++) d[i]=Math.sin(2*Math.PI*ef*i/ctx.sampleRate);
   return buf;
 }
-function startSound(){
-  actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:SR});
-  gainNode=actx.createGain();
-  gainNode.gain.value=document.getElementById('vol').value/100*0.7;
-  gainNode.connect(actx.destination);
-  sourceNode=actx.createBufferSource();
-  sourceNode.buffer=makeBuf(actx);
-  sourceNode.loop=true;
-  sourceNode.connect(gainNode);
-  actx.resume().then(function(){
-    sourceNode.start(0);
-    document.getElementById('msg').textContent='再生中 ♪  852 Hz';
+function startTone(){
+  var ctx=getCtx();
+  tGain=ctx.createGain(); tGain.gain.value=document.getElementById('volTone').value/100*.7; tGain.connect(ctx.destination);
+  tSrc=ctx.createBufferSource(); tSrc.buffer=makeBuf(ctx,FREQS[fi].hz); tSrc.loop=true; tSrc.connect(tGain);
+  ctx.resume().then(function(){tSrc.start(0);});
+}
+function stopTone(){if(!tSrc)return;try{tSrc.stop(0);}catch(e){}tSrc=null;tGain=null;}
+
+// BGM
+function startBgm(id){
+  var ctx=getCtx();
+  bgGain=ctx.createGain(); bgGain.gain.value=document.getElementById('volBgm').value/100*.5; bgGain.connect(ctx.destination);
+  bgNodes=[];
+  if(id==='white'||id==='brown'){
+    var bs=ctx.sampleRate*4,nb=ctx.createBuffer(1,bs,ctx.sampleRate),nd=nb.getChannelData(0);
+    if(id==='white'){for(var i=0;i<bs;i++)nd[i]=Math.random()*2-1;}
+    else{var last=0;for(var i=0;i<bs;i++){last=(last+(Math.random()*2-1)*.02)*.998;nd[i]=Math.max(-1,Math.min(1,last*8));}}
+    var ns=ctx.createBufferSource();ns.buffer=nb;ns.loop=true;
+    var lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=id==='white'?7000:700;
+    ns.connect(lp);lp.connect(bgGain);
+    ctx.resume().then(function(){ns.start(0);});bgNodes.push(ns);
+  } else if(id==='rain'){
+    bandNoise(ctx,bgGain,[{f:500,q:.5,g:.6},{f:1800,q:1,g:.4},{f:5000,q:2,g:.2}]);
+    droplets(ctx,bgGain,16,.07);
+  } else if(id==='river'){
+    bandNoise(ctx,bgGain,[{f:180,q:.4,g:.5},{f:700,q:.8,g:.4},{f:2500,q:1.5,g:.25}]);
+    droplets(ctx,bgGain,7,.04);
+  } else if(id==='wave'){
+    var bs=ctx.sampleRate*4,wb=ctx.createBuffer(1,bs,ctx.sampleRate),wd=wb.getChannelData(0);
+    for(var i=0;i<bs;i++)wd[i]=Math.random()*2-1;
+    var wn=ctx.createBufferSource();wn.buffer=wb;wn.loop=true;
+    var lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=650;
+    var wg=ctx.createGain();wg.gain.value=.5;
+    var lfo=ctx.createOscillator();lfo.frequency.value=.1;
+    var lg=ctx.createGain();lg.gain.value=.42;
+    lfo.connect(lg);lg.connect(wg.gain);
+    wn.connect(lp);lp.connect(wg);wg.connect(bgGain);
+    ctx.resume().then(function(){wn.start(0);lfo.start(0);});bgNodes.push(wn,lfo);
+  } else if(id==='forest'){
+    bandNoise(ctx,bgGain,[{f:250,q:.3,g:.3},{f:1200,q:2,g:.2}]);
+    chirps(ctx,bgGain);
+  } else if(id==='bowl'){
+    var bHz=FREQS[fi].hz;
+    [1,2.76,5.4].forEach(function(ratio,ri){
+      var fq=bHz*ratio; if(fq>18000)return;
+      var sb=ctx.createBuffer(1,ctx.sampleRate*4,ctx.sampleRate),sd=sb.getChannelData(0);
+      var dr=.00012*(ri+1);
+      for(var i=0;i<sb.length;i++) sd[i]=Math.sin(2*Math.PI*fq*i/ctx.sampleRate)*Math.exp(-dr*i)*(.55-ri*.15);
+      var ss=ctx.createBufferSource();ss.buffer=sb;ss.loop=true;ss.connect(bgGain);
+      ctx.resume().then(function(){ss.start(0);});bgNodes.push(ss);
+    });
+  }
+}
+function bandNoise(ctx,dest,bands){
+  var bs=ctx.sampleRate*4,nb=ctx.createBuffer(1,bs,ctx.sampleRate),nd=nb.getChannelData(0);
+  for(var i=0;i<bs;i++)nd[i]=Math.random()*2-1;
+  bands.forEach(function(b){
+    var ns=ctx.createBufferSource();ns.buffer=nb;ns.loop=true;
+    var bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=b.f;bp.Q.value=b.q;
+    var gn=ctx.createGain();gn.gain.value=b.g;
+    ns.connect(bp);bp.connect(gn);gn.connect(dest);
+    ctx.resume().then(function(){ns.start(0);});bgNodes.push(ns);
   });
 }
-function stopSound(){
-  if(!actx)return;
-  try{sourceNode.stop(0)}catch(e){}
-  try{actx.close()}catch(e){}
-  actx=null;sourceNode=null;gainNode=null;
-  document.getElementById('msg').textContent='停止';
+function droplets(ctx,dest,rate,vol){
+  var iv=setInterval(function(){
+    if(!bgGain){clearInterval(iv);return;}
+    var t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();
+    o.frequency.value=700+Math.random()*1400;
+    g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+.08);
+    o.connect(g);g.connect(dest);o.start(t);o.stop(t+.1);
+  },1000/rate);
+  bgNodes.push({stop:function(){clearInterval(iv);}});
+}
+function chirps(ctx,dest){
+  var iv=setInterval(function(){
+    if(!bgGain){clearInterval(iv);return;}
+    if(Math.random()>.35)return;
+    var t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();
+    var bf=1800+Math.random()*2200;
+    o.frequency.setValueAtTime(bf,t);o.frequency.linearRampToValueAtTime(bf*1.3,t+.07);
+    g.gain.setValueAtTime(.055,t);g.gain.exponentialRampToValueAtTime(.001,t+.13);
+    o.connect(g);g.connect(dest);o.start(t);o.stop(t+.18);
+  },350);
+  bgNodes.push({stop:function(){clearInterval(iv);}});
+}
+function stopBgm(){
+  bgNodes.forEach(function(n){try{if(n.stop)n.stop(0);}catch(e){}});
+  bgNodes=[];bgGain=null;
 }
 
+// ══ 再生/停止 ════════════════════════════════
 document.getElementById('playBtn').addEventListener('click',function(){
   if(isOn){
-    isOn=false;this.classList.remove('on');isRunning=false;
-    stopTimer();stopSound();
+    isOn=false;isRun=false;this.classList.remove('on');
+    stopTimer();stopTone();stopBgm();
+    document.getElementById('msg').textContent='停止';
   } else {
-    isOn=true;this.classList.add('on');isRunning=true;
-    startSound();if(chosenMin)startTimer(chosenMin);
+    isOn=true;isRun=true;this.classList.add('on');
+    startTone();
+    if(curBgm!=='none')startBgm(curBgm);
+    if(chosenMin)startTimer(chosenMin);
+    document.getElementById('msg').textContent='再生中 ♪  '+FREQS[fi].hz+' Hz';
   }
 });
 
-const volEl=document.getElementById('vol');
-volEl.addEventListener('input',function(){
-  this.style.setProperty('--p',this.value+'%');
-  if(gainNode)gainNode.gain.value=this.value/100*0.7;
-});
-volEl.style.setProperty('--p','80%');
+// ══ 音量 ════════════════════════════════════
+var vT=document.getElementById('volTone');
+vT.addEventListener('input',function(){this.style.setProperty('--p',this.value+'%');if(tGain)tGain.gain.value=this.value/100*.7;});
+vT.style.setProperty('--p','75%');
+var vB=document.getElementById('volBgm');
+vB.addEventListener('input',function(){this.style.setProperty('--p',this.value+'%');if(bgGain)bgGain.gain.value=this.value/100*.5;});
+vB.style.setProperty('--p','40%');
 
+// ══ タイマー ════════════════════════════════
+var timerEnd=null,timerTick=null,chosenMin=null;
 function startTimer(min){
-  stopTimer();
-  timerEnd=Date.now()+min*60000;
+  stopTimer();timerEnd=Date.now()+min*60000;
   timerTick=setInterval(function(){
     var rem=timerEnd-Date.now();
-    if(rem<=0){
-      stopTimer();isOn=false;isRunning=false;
-      document.getElementById('playBtn').classList.remove('on');
-      stopSound();return;
-    }
+    if(rem<=0){stopTimer();isOn=false;isRun=false;document.getElementById('playBtn').classList.remove('on');stopTone();stopBgm();document.getElementById('msg').textContent='タイマー終了';return;}
     var m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);
     document.getElementById('cd').textContent=('0'+m).slice(-2)+' : '+('0'+s).slice(-2);
   },500);
 }
-function stopTimer(){
-  clearInterval(timerTick);timerTick=null;timerEnd=null;
-  document.getElementById('cd').textContent='';
-}
+function stopTimer(){clearInterval(timerTick);timerTick=null;timerEnd=null;document.getElementById('cd').textContent='';}
 document.querySelectorAll('.tb').forEach(function(btn){
   btn.addEventListener('click',function(){
     var min=parseInt(this.dataset.min);
-    document.querySelectorAll('.tb').forEach(function(b){b.classList.remove('on')});
+    document.querySelectorAll('.tb').forEach(function(b){b.classList.remove('on');});
     if(chosenMin===min){chosenMin=null;stopTimer();}
-    else{
-      this.classList.add('on');chosenMin=min;
-      if(isOn)startTimer(min);
-      else document.getElementById('cd').textContent=('0'+min).slice(-2)+' : 00';
-    }
+    else{this.classList.add('on');chosenMin=min;if(isOn)startTimer(min);else document.getElementById('cd').textContent=('0'+min).slice(-2)+' : 00';}
   });
 });
 
-// ══════════════════════════════════════════
-//  PWA インストール
-// ══════════════════════════════════════════
-var deferredPrompt = null;
-var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-var isInStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-// Android/Chrome: beforeinstallprompt をキャッチ
-window.addEventListener('beforeinstallprompt', function(e){
-  e.preventDefault();
-  deferredPrompt = e;
-  // バナーを少し遅らせて表示
-  setTimeout(function(){ document.getElementById('installBanner').classList.add('show'); }, 1500);
+// ══ PWA ═════════════════════════════════════
+var dP=null,isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+var isSA=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dP=e;});
+document.getElementById('addBtn').addEventListener('click',function(){
+  if(isSA){alert('すでにホーム画面に追加されています');return;}
+  if(dP){dP.prompt();dP.userChoice.then(function(){dP=null;});}
+  else if(isIOS){document.getElementById('iosBanner').classList.add('show');}
+  else{alert('ブラウザのメニューから「ホーム画面に追加」を選択してください');}
 });
-
-// 「追加」ボタン押下
-document.getElementById('b-install').addEventListener('click', function(){
-  document.getElementById('installBanner').classList.remove('show');
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(function(){ deferredPrompt=null; });
-  }
-});
-document.getElementById('b-close').addEventListener('click', function(){
-  document.getElementById('installBanner').classList.remove('show');
-});
-
-// iOS: 案内バナーを表示
-document.getElementById('ios-close').addEventListener('click', function(){
-  document.getElementById('iosBanner').classList.remove('show');
-});
-
-// 「ホーム画面に追加」ボタン
-document.getElementById('addBtn').addEventListener('click', function(){
-  if(isInStandalone){
-    alert('すでにホーム画面に追加されています');
-    return;
-  }
-  if(deferredPrompt){
-    // Android/Chrome
-    document.getElementById('installBanner').classList.add('show');
-  } else if(isIOS){
-    // iOS Safari
-    document.getElementById('iosBanner').classList.add('show');
-  } else {
-    alert('ブラウザのメニューから「ホーム画面に追加」を選択してください');
-  }
-});
-
-// ══════════════════════════════════════════
-//  Service Worker 登録
-// ══════════════════════════════════════════
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').then(function(reg){
-    console.log('SW registered:', reg.scope);
-  }).catch(function(e){
-    console.log('SW error:', e);
-  });
-}
+document.getElementById('iosClose').addEventListener('click',function(){document.getElementById('iosBanner').classList.remove('show');});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function(){});
 </script>
 </body>
 </html>
