@@ -236,8 +236,10 @@ var BGMS=[
   {id:'wave',  name:'🌊 波音',     desc:'自然・瞑想'},
   {id:'white', name:'⬜ ホワイトノイズ', desc:'集中・睡眠'},
   {id:'brown', name:'🟫 ブラウンノイズ', desc:'深い集中'},
+  {id:'green', name:'🟩 グリーンノイズ', desc:'自然・リラックス'},
+  {id:'fire',  name:'🔥 焚き火',   desc:'温もり・瞑想'},
   {id:'bowl',  name:'🔔 シンギングボウル',desc:'瞑想・チャクラ'},
-  {id:'forest',name:'🌲 森の音',   desc:'自然・癒し'},
+  {id:'forest',name:'🌲 森の音',   desc:'風・鳥・虫のみ'},
 ];
 var curBgm='none';
 
@@ -282,51 +284,109 @@ BGMS.forEach(function(b){
   bgmWrap.appendChild(btn);
 });
 
-// ══ 棒人間 ══════════════════════════════════
+// ══ 釣り人アニメーション ══════════════════════
 var stg=document.getElementById('stage'),sc=stg.getContext('2d');
-var sT=0,isRun=false;
-function pose(t,run){
-  var spd=run?.18:.08,ph=t*spd,cx=140,cy=run?34:39;
-  var by=run?Math.sin(ph*2)*4:Math.sin(ph*2)*1.5;
-  var ls=run?32:18,lgs=run?36:20;
-  var rA=Math.sin(ph)*ls,lA=Math.sin(ph+Math.PI)*ls;
-  var rL=Math.sin(ph+Math.PI)*lgs,lL=Math.sin(ph)*lgs;
-  var ko=run?Math.abs(Math.sin(ph))*20:0;
-  var r=function(d){return d*Math.PI/180;};
-  var hR=9,nk={x:cx,y:cy+by},hd={x:cx,y:nk.y-hR-2};
-  var sh={x:cx,y:nk.y+6},hp={x:cx,y:sh.y+20};
-  var a1=12,a2=11,l1=16,l2=15;
-  var rE={x:sh.x+Math.sin(r(rA))*a1,y:sh.y+Math.cos(r(rA))*a1};
-  var rH={x:rE.x+Math.sin(r(rA+20))*a2,y:rE.y+Math.cos(r(rA+20))*a2};
-  var lE={x:sh.x+Math.sin(r(lA))*a1,y:sh.y+Math.cos(r(lA))*a1};
-  var lH={x:lE.x+Math.sin(r(lA+20))*a2,y:lE.y+Math.cos(r(lA+20))*a2};
-  var rK={x:hp.x+Math.sin(r(rL))*l1,y:hp.y+Math.cos(r(rL))*l1-ko*.3};
-  var rF={x:rK.x+Math.sin(r(rL-ko))*l2,y:rK.y+Math.cos(r(rL-ko))*l2};
-  var lK={x:hp.x+Math.sin(r(lL))*l1,y:hp.y+Math.cos(r(lL))*l1-ko*.3};
-  var lF={x:lK.x+Math.sin(r(lL+ko))*l2,y:lK.y+Math.cos(r(lL+ko))*l2};
-  return{hd:hd,hR:hR,nk:nk,sh:sh,hp:hp,rE:rE,rH:rH,lE:lE,lH:lH,rK:rK,rF:rF,lK:lK,lF:lF};
-}
+var sT=0,isRun=false; // isRun: true=再生中(竿を上げてる) / false=待機(ゆったり)
+
 function ln(a,b){sc.beginPath();sc.moveTo(a.x,a.y);sc.lineTo(b.x,b.y);sc.stroke();}
-function drawS(run){
-  var p=pose(sT,run);
-  sc.strokeStyle=run?FREQS[fi].color:'#3e3a44';
-  sc.lineWidth=run?2.2:1.8;sc.lineCap='round';sc.lineJoin='round';
+
+function drawFisher(t, active){
   sc.clearRect(0,0,stg.width,stg.height);
-  sc.beginPath();sc.arc(p.hd.x,p.hd.y,p.hR,0,Math.PI*2);sc.stroke();
-  ln(p.nk,p.hp);
-  ln(p.sh,p.rE);ln(p.rE,p.rH);ln(p.sh,p.lE);ln(p.lE,p.lH);
-  ln(p.hp,p.rK);ln(p.rK,p.rF);ln(p.hp,p.lK);ln(p.lK,p.lF);
-  if(run){
-    sc.strokeStyle='rgba(200,169,110,.18)';sc.lineWidth=1;
-    sc.beginPath();sc.moveTo(30,70);sc.lineTo(250,70);sc.stroke();
-    sc.strokeStyle='rgba(200,169,110,.2)';
-    for(var i=0;i<4;i++){var bx=60-(sT*3+i*30)%110,by=48+i*5;sc.beginPath();sc.moveTo(bx,by);sc.lineTo(bx+15,by);sc.stroke();}
-  } else {
-    sc.strokeStyle='rgba(70,65,75,.35)';sc.lineWidth=1;
-    sc.beginPath();sc.moveTo(30,70);sc.lineTo(250,70);sc.stroke();
+  sc.lineCap='round'; sc.lineJoin='round';
+
+  var col = active ? FREQS[fi].color : '#5a5560';
+  var ph  = t * 0.012; // とてもゆっくり
+
+  // ── 水面 ──────────────────────────────
+  sc.strokeStyle='rgba(80,120,160,0.22)'; sc.lineWidth=1;
+  for(var w=0;w<3;w++){
+    var wy=66+w*4;
+    sc.beginPath();
+    for(var x=20;x<260;x+=2){
+      var y=wy+Math.sin((x*0.04)+ph*2+w)*1.2;
+      x===20?sc.moveTo(x,y):sc.lineTo(x,y);
+    }
+    sc.stroke();
   }
+
+  // ── 釣り人の座標（中央より少し左） ──────
+  var px=110, py=44;
+
+  // 呼吸の上下（ごくわずか）
+  var breathY = Math.sin(ph*1.3)*1.2;
+
+  // 頭
+  sc.strokeStyle=col; sc.lineWidth=2;
+  sc.beginPath(); sc.arc(px, py+breathY, 8, 0, Math.PI*2); sc.stroke();
+
+  // 胴体
+  var nk={x:px,   y:py+8+breathY};
+  var hp={x:px,   y:py+26+breathY};
+  ln(nk, hp);
+
+  // 左腕（腕を前に伸ばして竿を持つ）
+  var lSh={x:px-4, y:py+11+breathY};
+  var lEl={x:px-10,y:py+18+breathY};
+  var lHd={x:px-16,y:py+14+breathY};
+  ln(lSh,lEl); ln(lEl,lHd);
+
+  // 右腕（竿を上に持ち上げる・ゆらゆら）
+  var rodSwing = Math.sin(ph)*3; // 竿の揺れ
+  var rSh={x:px+4, y:py+11+breathY};
+  var rEl={x:px+12,y:py+8+breathY+rodSwing*0.3};
+  var rHd={x:px+18,y:py+3+breathY+rodSwing*0.5};
+  ln(rSh,rEl); ln(rEl,rHd);
+
+  // 脚（座っている）
+  var rK={x:px+8, y:py+34+breathY};
+  var rF={x:px+18,y:py+42+breathY};
+  var lK={x:px-8, y:py+34+breathY};
+  var lF={x:px-18,y:py+42+breathY};
+  ln(hp,rK); ln(rK,rF);
+  ln(hp,lK); ln(lK,lF);
+
+  // ── 釣り竿 ──────────────────────────────
+  // 竿：手元から右上方向に長く伸びる
+  var rodBaseX=rHd.x, rodBaseY=rHd.y;
+  var rodTipX = rodBaseX+90+rodSwing;
+  var rodTipY = rodBaseY-28+rodSwing*0.4;
+  sc.strokeStyle=col; sc.lineWidth=1.5;
+  sc.beginPath(); sc.moveTo(rodBaseX,rodBaseY); sc.lineTo(rodTipX,rodTipY); sc.stroke();
+
+  // ── 糸 ──────────────────────────────────
+  // 糸の先端（水面上でゆらゆら）
+  var lineSwing = Math.sin(ph*0.8+1)*6;
+  var lineEndX  = rodTipX+14+lineSwing;
+  var lineEndY  = 64; // 水面近く
+
+  // 糸（竿先→水面）を放物線風に
+  sc.strokeStyle= active
+    ? 'rgba(200,169,110,0.6)'
+    : 'rgba(120,115,125,0.4)';
+  sc.lineWidth=0.8;
+  sc.beginPath();
+  sc.moveTo(rodTipX, rodTipY);
+  sc.quadraticCurveTo(
+    rodTipX+20, rodTipY+20,
+    lineEndX, lineEndY
+  );
+  sc.stroke();
+
+  // ── ウキ ──────────────────────────────
+  var bobY = lineEndY + Math.sin(ph*1.1)*1.5; // 水面でぷかぷか
+  // ウキ上部（赤）
+  sc.fillStyle= active ? 'rgba(200,80,60,0.85)' : 'rgba(130,90,90,0.5)';
+  sc.beginPath(); sc.ellipse(lineEndX, bobY-2, 3, 4.5, 0, 0, Math.PI*2); sc.fill();
+  // ウキ下部（白）
+  sc.fillStyle= active ? 'rgba(220,210,190,0.8)' : 'rgba(140,130,140,0.4)';
+  sc.beginPath(); sc.ellipse(lineEndX, bobY+3, 2.5, 3.5, 0, 0, Math.PI*2); sc.fill();
+
+  // ── 岸（人が座っている場所） ──────────
+  sc.strokeStyle='rgba(120,100,70,0.3)'; sc.lineWidth=1.5;
+  sc.beginPath(); sc.moveTo(60,66); sc.lineTo(175,66); sc.stroke();
 }
-(function loop(){sT++;drawS(isRun);requestAnimationFrame(loop);})();
+
+(function loop(){ sT++; drawFisher(sT, isRun); requestAnimationFrame(loop); })();
 
 // ══ Audio ═══════════════════════════════════
 var actx=null,tSrc=null,tGain=null,bgGain=null,bgNodes=[];
@@ -381,9 +441,69 @@ function startBgm(id){
     lfo.connect(lg);lg.connect(wg.gain);
     wn.connect(lp);lp.connect(wg);wg.connect(bgGain);
     ctx.resume().then(function(){wn.start(0);lfo.start(0);});bgNodes.push(wn,lfo);
+  } else if(id==='fire'){
+    // 焚き火：ベースのクラックルノイズ＋パチパチ＋低音のゆらぎ
+    var bs=ctx.sampleRate*4,nb=ctx.createBuffer(1,bs,ctx.sampleRate),nd=nb.getChannelData(0);
+    for(var i=0;i<bs;i++) nd[i]=Math.random()*2-1;
+    // ベースの燃焼音（低〜中域）
+    var fn1=ctx.createBufferSource(); fn1.buffer=nb; fn1.loop=true;
+    var lp1=ctx.createBiquadFilter(); lp1.type='lowpass'; lp1.frequency.value=400;
+    var fg1=ctx.createGain(); fg1.gain.value=0.5;
+    // 炎のゆらぎLFO
+    var flfo=ctx.createOscillator(); flfo.frequency.value=0.15;
+    var flfoG=ctx.createGain(); flfoG.gain.value=0.3;
+    flfo.connect(flfoG); flfoG.connect(fg1.gain);
+    fn1.connect(lp1); lp1.connect(fg1); fg1.connect(bgGain);
+    // 中域のシュー音
+    var fn2=ctx.createBufferSource(); fn2.buffer=nb; fn2.loop=true;
+    var bp2=ctx.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=900; bp2.Q.value=0.5;
+    var fg2=ctx.createGain(); fg2.gain.value=0.25;
+    fn2.connect(bp2); bp2.connect(fg2); fg2.connect(bgGain);
+    ctx.resume().then(function(){ fn1.start(0); fn2.start(0); flfo.start(0); });
+    bgNodes.push(fn1,fn2,flfo);
+    // パチパチはじける音
+    crackle(ctx,bgGain);
+    // グリーンノイズ：500〜1000Hz中心帯域 自然界に近いバランス
+    var bs=ctx.sampleRate*4,nb=ctx.createBuffer(1,bs,ctx.sampleRate),nd=nb.getChannelData(0);
+    for(var i=0;i<bs;i++)nd[i]=Math.random()*2-1;
+    var ns=ctx.createBufferSource();ns.buffer=nb;ns.loop=true;
+    // ピーク500〜800Hzのバンドパス
+    var bp1=ctx.createBiquadFilter();bp1.type='bandpass';bp1.frequency.value=650;bp1.Q.value=0.6;
+    // 高域を少し残すハイシェルフ
+    var hs=ctx.createBiquadFilter();hs.type='highshelf';hs.frequency.value=3000;hs.gain.value=-14;
+    // 低域を少し残すローシェルフ
+    var ls2=ctx.createBiquadFilter();ls2.type='lowshelf';ls2.frequency.value=200;ls2.gain.value=-10;
+    var gn2=ctx.createGain();gn2.gain.value=1.2;
+    ns.connect(bp1);bp1.connect(hs);hs.connect(ls2);ls2.connect(gn2);gn2.connect(bgGain);
+    ctx.resume().then(function(){ns.start(0);});bgNodes.push(ns);
   } else if(id==='forest'){
-    bandNoise(ctx,bgGain,[{f:250,q:.3,g:.3},{f:1200,q:2,g:.2}]);
+    // 森の音：風のみ（水系なし）＋鳥＋虫
+    // 風：超低周波LFOで揺れるバンドノイズ（葉ずれ）
+    var bs=ctx.sampleRate*4,wb=ctx.createBuffer(1,bs,ctx.sampleRate),wd=wb.getChannelData(0);
+    for(var i=0;i<bs;i++)wd[i]=Math.random()*2-1;
+    // 葉ずれ成分（800〜3000Hz）
+    var wn1=ctx.createBufferSource();wn1.buffer=wb;wn1.loop=true;
+    var bp_leaf=ctx.createBiquadFilter();bp_leaf.type='bandpass';bp_leaf.frequency.value=1400;bp_leaf.Q.value=0.7;
+    var gLeaf=ctx.createGain();gLeaf.gain.value=0.35;
+    // 風のゆらぎLFO
+    var lfo1=ctx.createOscillator();lfo1.frequency.value=0.06;
+    var lfoG1=ctx.createGain();lfoG1.gain.value=0.25;
+    lfo1.connect(lfoG1);lfoG1.connect(gLeaf.gain);
+    wn1.connect(bp_leaf);bp_leaf.connect(gLeaf);gLeaf.connect(bgGain);
+    // 風の低音うねり（50〜300Hz）
+    var wn2=ctx.createBufferSource();wn2.buffer=wb;wn2.loop=true;
+    var bp_wind=ctx.createBiquadFilter();bp_wind.type='bandpass';bp_wind.frequency.value=120;bp_wind.Q.value=0.4;
+    var gWind=ctx.createGain();gWind.gain.value=0.2;
+    var lfo2=ctx.createOscillator();lfo2.frequency.value=0.04;
+    var lfoG2=ctx.createGain();lfoG2.gain.value=0.15;
+    lfo2.connect(lfoG2);lfoG2.connect(gWind.gain);
+    wn2.connect(bp_wind);bp_wind.connect(gWind);gWind.connect(bgGain);
+    ctx.resume().then(function(){wn1.start(0);wn2.start(0);lfo1.start(0);lfo2.start(0);});
+    bgNodes.push(wn1,wn2,lfo1,lfo2);
+    // 鳥のさえずり（クリアな高音域）
     chirps(ctx,bgGain);
+    // 虫の鳴き声（低め・断続的）
+    insects(ctx,bgGain);
   } else if(id==='bowl'){
     var bHz=FREQS[fi].hz;
     [1,2.76,5.4].forEach(function(ratio,ri){
@@ -417,16 +537,58 @@ function droplets(ctx,dest,rate,vol){
   },1000/rate);
   bgNodes.push({stop:function(){clearInterval(iv);}});
 }
+function crackle(ctx,dest){
+  // 焚き火のパチパチ：不規則な短いバースト
+  var iv=setInterval(function(){
+    if(!bgGain){clearInterval(iv);return;}
+    if(Math.random()>.55)return;
+    var t=ctx.currentTime;
+    var bursts=1+Math.floor(Math.random()*3);
+    for(var b=0;b<bursts;b++){
+      var bs2=Math.floor(ctx.sampleRate*0.04);
+      var nb2=ctx.createBuffer(1,bs2,ctx.sampleRate);
+      var nd2=nb2.getChannelData(0);
+      for(var i=0;i<bs2;i++) nd2[i]=(Math.random()*2-1)*Math.exp(-i/(bs2*0.3));
+      var src=ctx.createBufferSource(); src.buffer=nb2;
+      var hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=800+Math.random()*1200;
+      var g=ctx.createGain(); g.gain.value=0.15+Math.random()*0.2;
+      src.connect(hp); hp.connect(g); g.connect(dest);
+      var bt=t+b*(0.02+Math.random()*0.06);
+      src.start(bt);
+    }
+  },180+Math.random()*120);
+  bgNodes.push({stop:function(){clearInterval(iv);}});
+}
 function chirps(ctx,dest){
   var iv=setInterval(function(){
     if(!bgGain){clearInterval(iv);return;}
     if(Math.random()>.35)return;
     var t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();
-    var bf=1800+Math.random()*2200;
-    o.frequency.setValueAtTime(bf,t);o.frequency.linearRampToValueAtTime(bf*1.3,t+.07);
-    g.gain.setValueAtTime(.055,t);g.gain.exponentialRampToValueAtTime(.001,t+.13);
-    o.connect(g);g.connect(dest);o.start(t);o.stop(t+.18);
-  },350);
+    var bf=2200+Math.random()*1800;
+    o.frequency.setValueAtTime(bf,t);o.frequency.linearRampToValueAtTime(bf*1.25,t+.06);
+    g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);
+    o.connect(g);g.connect(dest);o.start(t);o.stop(t+.16);
+  },320);
+  bgNodes.push({stop:function(){clearInterval(iv);}});
+}
+function insects(ctx,dest){
+  // 虫：3〜6kHz の短い連続パルス（コオロギ・セミ風）
+  var iv=setInterval(function(){
+    if(!bgGain){clearInterval(iv);return;}
+    if(Math.random()>.45)return;
+    var t=ctx.currentTime;
+    var pulses=2+Math.floor(Math.random()*3);
+    for(var p=0;p<pulses;p++){
+      var o=ctx.createOscillator(),g=ctx.createGain();
+      var bf=3500+Math.random()*2000;
+      o.frequency.value=bf;
+      var pt=t+p*0.04;
+      g.gain.setValueAtTime(0,pt);
+      g.gain.linearRampToValueAtTime(.03,pt+.01);
+      g.gain.exponentialRampToValueAtTime(.001,pt+.035);
+      o.connect(g);g.connect(dest);o.start(pt);o.stop(pt+.04);
+    }
+  },600);
   bgNodes.push({stop:function(){clearInterval(iv);}});
 }
 function stopBgm(){
