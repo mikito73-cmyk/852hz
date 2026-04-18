@@ -286,104 +286,155 @@ BGMS.forEach(function(b){
 
 // ══ 釣り人アニメーション ══════════════════════
 var stg=document.getElementById('stage'),sc=stg.getContext('2d');
-var sT=0,isRun=false; // isRun: true=再生中(竿を上げてる) / false=待機(ゆったり)
+var sT=0,isRun=false;
 
 function ln(a,b){sc.beginPath();sc.moveTo(a.x,a.y);sc.lineTo(b.x,b.y);sc.stroke();}
+function circle(x,y,r){sc.beginPath();sc.arc(x,y,r,0,Math.PI*2);sc.stroke();}
+function fillCircle(x,y,r){sc.beginPath();sc.arc(x,y,r,0,Math.PI*2);sc.fill();}
 
 function drawFisher(t, active){
   sc.clearRect(0,0,stg.width,stg.height);
   sc.lineCap='round'; sc.lineJoin='round';
 
-  var col = active ? FREQS[fi].color : '#5a5560';
-  var ph  = t * 0.012; // とてもゆっくり
+  var col   = active ? FREQS[fi].color : '#4a4655';
+  var colA  = active ? 'rgba(200,169,110,' : 'rgba(74,70,85,';
+  var ph    = t * 0.008; // 非常にゆっくり
 
-  // ── 水面 ──────────────────────────────
-  sc.strokeStyle='rgba(80,120,160,0.22)'; sc.lineWidth=1;
-  for(var w=0;w<3;w++){
-    var wy=66+w*4;
+  // ━━ 背景：水面 ━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 水面グラデーション
+  var wGrad = sc.createLinearGradient(0,58,0,82);
+  wGrad.addColorStop(0, active?'rgba(40,80,120,0.28)':'rgba(40,50,70,0.18)');
+  wGrad.addColorStop(1, active?'rgba(20,50,90,0.10)':'rgba(20,30,50,0.08)');
+  sc.fillStyle=wGrad;
+  sc.fillRect(0,58,280,24);
+
+  // 水面のさざ波（3本・周期ずらし）
+  sc.lineWidth=0.7;
+  for(var wi=0;wi<3;wi++){
+    sc.strokeStyle = active
+      ? 'rgba(100,160,220,'+(0.18-wi*0.04)+')'
+      : 'rgba(80,90,110,'+(0.12-wi*0.03)+')';
     sc.beginPath();
-    for(var x=20;x<260;x+=2){
-      var y=wy+Math.sin((x*0.04)+ph*2+w)*1.2;
-      x===20?sc.moveTo(x,y):sc.lineTo(x,y);
+    for(var wx=0;wx<280;wx+=2){
+      var wy=60+wi*5+Math.sin(wx*0.035+ph*2.5+wi*1.2)*1.4;
+      wx===0?sc.moveTo(wx,wy):sc.lineTo(wx,wy);
     }
     sc.stroke();
   }
 
-  // ── 釣り人の座標（中央より少し左） ──────
-  var px=110, py=44;
-
-  // 呼吸の上下（ごくわずか）
-  var breathY = Math.sin(ph*1.3)*1.2;
-
-  // 頭
-  sc.strokeStyle=col; sc.lineWidth=2;
-  sc.beginPath(); sc.arc(px, py+breathY, 8, 0, Math.PI*2); sc.stroke();
-
-  // 胴体
-  var nk={x:px,   y:py+8+breathY};
-  var hp={x:px,   y:py+26+breathY};
-  ln(nk, hp);
-
-  // 左腕（腕を前に伸ばして竿を持つ）
-  var lSh={x:px-4, y:py+11+breathY};
-  var lEl={x:px-10,y:py+18+breathY};
-  var lHd={x:px-16,y:py+14+breathY};
-  ln(lSh,lEl); ln(lEl,lHd);
-
-  // 右腕（竿を上に持ち上げる・ゆらゆら）
-  var rodSwing = Math.sin(ph)*3; // 竿の揺れ
-  var rSh={x:px+4, y:py+11+breathY};
-  var rEl={x:px+12,y:py+8+breathY+rodSwing*0.3};
-  var rHd={x:px+18,y:py+3+breathY+rodSwing*0.5};
-  ln(rSh,rEl); ln(rEl,rHd);
-
-  // 脚（座っている）
-  var rK={x:px+8, y:py+34+breathY};
-  var rF={x:px+18,y:py+42+breathY};
-  var lK={x:px-8, y:py+34+breathY};
-  var lF={x:px-18,y:py+42+breathY};
-  ln(hp,rK); ln(rK,rF);
-  ln(hp,lK); ln(lK,lF);
-
-  // ── 釣り竿 ──────────────────────────────
-  // 竿：手元から右上方向に長く伸びる
-  var rodBaseX=rHd.x, rodBaseY=rHd.y;
-  var rodTipX = rodBaseX+90+rodSwing;
-  var rodTipY = rodBaseY-28+rodSwing*0.4;
-  sc.strokeStyle=col; sc.lineWidth=1.5;
-  sc.beginPath(); sc.moveTo(rodBaseX,rodBaseY); sc.lineTo(rodTipX,rodTipY); sc.stroke();
-
-  // ── 糸 ──────────────────────────────────
-  // 糸の先端（水面上でゆらゆら）
-  var lineSwing = Math.sin(ph*0.8+1)*6;
-  var lineEndX  = rodTipX+14+lineSwing;
-  var lineEndY  = 64; // 水面近く
-
-  // 糸（竿先→水面）を放物線風に
-  sc.strokeStyle= active
-    ? 'rgba(200,169,110,0.6)'
-    : 'rgba(120,115,125,0.4)';
-  sc.lineWidth=0.8;
+  // 岸辺のライン
+  sc.strokeStyle = active ? 'rgba(160,130,80,0.35)' : 'rgba(80,75,85,0.25)';
+  sc.lineWidth=2;
   sc.beginPath();
-  sc.moveTo(rodTipX, rodTipY);
-  sc.quadraticCurveTo(
-    rodTipX+20, rodTipY+20,
-    lineEndX, lineEndY
+  sc.moveTo(30,58); sc.lineTo(170,58);
+  sc.stroke();
+
+  // ━━ 人物（px=105, 岸に座る） ━━━━━━━━━━━━━
+  var px=105;
+  // 呼吸：sin波でごくわずかに上下
+  var br = Math.sin(ph*1.6)*1.0;
+
+  sc.strokeStyle=col; sc.lineWidth=2;
+
+  // 頭（少し前傾き）
+  var hx=px+2, hy=24+br;
+  circle(hx, hy, 7.5);
+
+  // 首〜胴体（前傾姿勢）
+  var nkX=px+1,  nkY=hy+7.5+br;
+  var chX=px-1,  chY=nkY+10+br; // 胸
+  var hpX=px-3,  hpY=chY+12+br; // 腰
+
+  // 背骨（首〜胸〜腰）
+  sc.beginPath(); sc.moveTo(nkX,nkY); sc.quadraticCurveTo(chX+2,chY,hpX,hpY); sc.stroke();
+
+  // 右腕（竿を持ち上げ・肘を軽く曲げる）
+  var rodSway = Math.sin(ph)*2.5; // 竿のゆらぎ
+  var rShX=px+6,  rShY=nkY+4+br;
+  var rElX=px+15, rElY=nkY+0+br+rodSway*0.4;
+  var rHdX=px+22, rHdY=nkY-6+br+rodSway*0.7;
+  sc.lineWidth=1.8;
+  ln({x:rShX,y:rShY},{x:rElX,y:rElY});
+  ln({x:rElX,y:rElY},{x:rHdX,y:rHdY});
+
+  // 左腕（膝の上で休む）
+  var lShX=px-4, lShY=nkY+4+br;
+  var lElX=px-10,lElY=nkY+12+br;
+  var lHdX=px-6, lHdY=nkY+20+br;
+  ln({x:lShX,y:lShY},{x:lElX,y:lElY});
+  ln({x:lElX,y:lElY},{x:lHdX,y:lHdY});
+
+  // 脚（座り姿勢：太もも→ひざ→すね）
+  sc.lineWidth=2;
+  // 右脚
+  var rThX=hpX+6, rThY=hpY+2+br;
+  var rKnX=hpX+16,rKnY=hpY+12+br;
+  var rFtX=hpX+22,rFtY=hpY+20+br;
+  ln({x:hpX,y:hpY},{x:rThX,y:rThY});
+  ln({x:rThX,y:rThY},{x:rKnX,y:rKnY});
+  ln({x:rKnX,y:rKnY},{x:rFtX,y:rFtY});
+  // 左脚
+  var lThX=hpX-4, lThY=hpY+3+br;
+  var lKnX=hpX+6, lKnY=hpY+14+br;
+  var lFtX=hpX+14,lFtY=hpY+22+br;
+  ln({x:hpX,y:hpY},{x:lThX,y:lThY});
+  ln({x:lThX,y:lThY},{x:lKnX,y:lKnY});
+  ln({x:lKnX,y:lKnY},{x:lFtX,y:lFtY});
+
+  // ━━ 釣り竿 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 竿：手元(rHd)から右上方向に長くしなる
+  var rodTipX = rHdX+100+rodSway;
+  var rodTipY = rHdY-22+rodSway*0.3;
+  // 竿を3点ベジェでしなり表現
+  sc.strokeStyle=col; sc.lineWidth=1.4;
+  sc.beginPath();
+  sc.moveTo(rHdX, rHdY);
+  sc.bezierCurveTo(
+    rHdX+35, rHdY-8+rodSway*0.3,
+    rHdX+70, rHdY-18+rodSway*0.5,
+    rodTipX, rodTipY
   );
   sc.stroke();
 
-  // ── ウキ ──────────────────────────────
-  var bobY = lineEndY + Math.sin(ph*1.1)*1.5; // 水面でぷかぷか
-  // ウキ上部（赤）
-  sc.fillStyle= active ? 'rgba(200,80,60,0.85)' : 'rgba(130,90,90,0.5)';
-  sc.beginPath(); sc.ellipse(lineEndX, bobY-2, 3, 4.5, 0, 0, Math.PI*2); sc.fill();
-  // ウキ下部（白）
-  sc.fillStyle= active ? 'rgba(220,210,190,0.8)' : 'rgba(140,130,140,0.4)';
-  sc.beginPath(); sc.ellipse(lineEndX, bobY+3, 2.5, 3.5, 0, 0, Math.PI*2); sc.fill();
+  // 竿先のガイドリング（小さい丸）
+  sc.strokeStyle=colA+'0.5)'; sc.lineWidth=0.8;
+  circle(rodTipX, rodTipY, 2);
 
-  // ── 岸（人が座っている場所） ──────────
-  sc.strokeStyle='rgba(120,100,70,0.3)'; sc.lineWidth=1.5;
-  sc.beginPath(); sc.moveTo(60,66); sc.lineTo(175,66); sc.stroke();
+  // ━━ 糸 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  var lineSway = Math.sin(ph*0.7+0.5)*5;
+  var lineEndX = rodTipX+18+lineSway;
+  var lineEndY = 62;
+
+  sc.strokeStyle = active
+    ? 'rgba(200,169,110,0.55)'
+    : 'rgba(100,95,110,0.35)';
+  sc.lineWidth=0.7;
+  sc.beginPath();
+  sc.moveTo(rodTipX+1, rodTipY+2);
+  sc.quadraticCurveTo(rodTipX+25, rodTipY+18, lineEndX, lineEndY);
+  sc.stroke();
+
+  // ━━ ウキ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  var bobY = lineEndY + Math.sin(ph*1.3)*1.2;
+
+  // ウキ本体（楕円・上赤下白）
+  sc.save();
+  sc.translate(lineEndX, bobY);
+  // 赤い上部
+  sc.fillStyle = active ? 'rgba(210,70,50,0.9)' : 'rgba(110,80,80,0.5)';
+  sc.beginPath(); sc.ellipse(0,-2.5,2.5,4,0,0,Math.PI*2); sc.fill();
+  // 白い下部
+  sc.fillStyle = active ? 'rgba(230,220,200,0.85)' : 'rgba(130,125,135,0.45)';
+  sc.beginPath(); sc.ellipse(0,2.5,2,3.5,0,0,Math.PI*2); sc.fill();
+  // ウキの細い中軸線
+  sc.strokeStyle = active ? 'rgba(200,169,110,0.6)' : 'rgba(100,95,110,0.3)';
+  sc.lineWidth=0.6;
+  sc.beginPath(); sc.moveTo(0,-6); sc.lineTo(0,6); sc.stroke();
+  sc.restore();
+
+  // ウキの水面反射（小さな楕円）
+  sc.fillStyle = active ? 'rgba(100,160,220,0.15)' : 'rgba(60,60,80,0.10)';
+  sc.beginPath(); sc.ellipse(lineEndX, bobY+7, 4, 1.5, 0, 0, Math.PI*2); sc.fill();
 }
 
 (function loop(){ sT++; drawFisher(sT, isRun); requestAnimationFrame(loop); })();
@@ -442,67 +493,84 @@ function startBgm(id){
     wn.connect(lp);lp.connect(wg);wg.connect(bgGain);
     ctx.resume().then(function(){wn.start(0);lfo.start(0);});bgNodes.push(wn,lfo);
   } else if(id==='fire'){
-    // 焚き火：ベースのクラックルノイズ＋パチパチ＋低音のゆらぎ
-    var bs=ctx.sampleRate*4,nb=ctx.createBuffer(1,bs,ctx.sampleRate),nd=nb.getChannelData(0);
-    for(var i=0;i<bs;i++) nd[i]=Math.random()*2-1;
-    // ベースの燃焼音（低〜中域）
+    // 焚き火：低域の燃焼ベース＋LFOゆらぎのみ（パチパチは別途）
+    var bs=ctx.sampleRate*6,nb=ctx.createBuffer(1,bs,ctx.sampleRate),nd=nb.getChannelData(0);
+    // ピンクノイズ（1/fノイズ近似）で自然な燃焼音
+    var b0=0,b1=0,b2=0,b3=0,b4=0,b5=0;
+    for(var i=0;i<bs;i++){
+      var w=Math.random()*2-1;
+      b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759;
+      b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856;
+      b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
+      nd[i]=Math.max(-1,Math.min(1,(b0+b1+b2+b3+b4+b5+w*0.5362)*0.11));
+    }
     var fn1=ctx.createBufferSource(); fn1.buffer=nb; fn1.loop=true;
-    var lp1=ctx.createBiquadFilter(); lp1.type='lowpass'; lp1.frequency.value=400;
-    var fg1=ctx.createGain(); fg1.gain.value=0.5;
-    // 炎のゆらぎLFO
-    var flfo=ctx.createOscillator(); flfo.frequency.value=0.15;
-    var flfoG=ctx.createGain(); flfoG.gain.value=0.3;
+    // 600Hz以下だけ通す（煤けた燃焼音）
+    var lp1=ctx.createBiquadFilter(); lp1.type='lowpass'; lp1.frequency.value=550; lp1.Q.value=0.5;
+    var fg1=ctx.createGain(); fg1.gain.value=0.9;
+    // ゆったりした炎のゆらぎ
+    var flfo=ctx.createOscillator(); flfo.type='sine'; flfo.frequency.value=0.08;
+    var flfoG=ctx.createGain(); flfoG.gain.value=0.35;
     flfo.connect(flfoG); flfoG.connect(fg1.gain);
     fn1.connect(lp1); lp1.connect(fg1); fg1.connect(bgGain);
-    // 中域のシュー音
-    var fn2=ctx.createBufferSource(); fn2.buffer=nb; fn2.loop=true;
-    var bp2=ctx.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=900; bp2.Q.value=0.5;
-    var fg2=ctx.createGain(); fg2.gain.value=0.25;
-    fn2.connect(bp2); bp2.connect(fg2); fg2.connect(bgGain);
-    ctx.resume().then(function(){ fn1.start(0); fn2.start(0); flfo.start(0); });
-    bgNodes.push(fn1,fn2,flfo);
-    // パチパチはじける音
+    ctx.resume().then(function(){ fn1.start(0); flfo.start(0); });
+    bgNodes.push(fn1,flfo);
     crackle(ctx,bgGain);
-    // グリーンノイズ：500〜1000Hz中心帯域 自然界に近いバランス
+
+  } else if(id==='green'){
+    // グリーンノイズ：500〜800Hz中心・自然界に最も近い帯域
     var bs=ctx.sampleRate*4,nb=ctx.createBuffer(1,bs,ctx.sampleRate),nd=nb.getChannelData(0);
-    for(var i=0;i<bs;i++)nd[i]=Math.random()*2-1;
-    var ns=ctx.createBufferSource();ns.buffer=nb;ns.loop=true;
-    // ピーク500〜800Hzのバンドパス
-    var bp1=ctx.createBiquadFilter();bp1.type='bandpass';bp1.frequency.value=650;bp1.Q.value=0.6;
-    // 高域を少し残すハイシェルフ
-    var hs=ctx.createBiquadFilter();hs.type='highshelf';hs.frequency.value=3000;hs.gain.value=-14;
-    // 低域を少し残すローシェルフ
-    var ls2=ctx.createBiquadFilter();ls2.type='lowshelf';ls2.frequency.value=200;ls2.gain.value=-10;
-    var gn2=ctx.createGain();gn2.gain.value=1.2;
-    ns.connect(bp1);bp1.connect(hs);hs.connect(ls2);ls2.connect(gn2);gn2.connect(bgGain);
-    ctx.resume().then(function(){ns.start(0);});bgNodes.push(ns);
+    // ピンクノイズベースで生成
+    var b0=0,b1=0,b2=0,b3=0,b4=0,b5=0;
+    for(var i=0;i<bs;i++){
+      var w=Math.random()*2-1;
+      b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759;
+      b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856;
+      b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
+      nd[i]=Math.max(-1,Math.min(1,(b0+b1+b2+b3+b4+b5+w*0.5362)*0.11));
+    }
+    var ns=ctx.createBufferSource(); ns.buffer=nb; ns.loop=true;
+    // 500〜900Hzのピークを作るピーキングEQ
+    var pk=ctx.createBiquadFilter(); pk.type='peaking'; pk.frequency.value=650; pk.Q.value=0.8; pk.gain.value=10;
+    // 200Hz以下と3000Hz以上をカット
+    var hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=180; hp.Q.value=0.5;
+    var lp=ctx.createBiquadFilter(); lp.type='lowpass';  lp.frequency.value=3200; lp.Q.value=0.5;
+    var gn=ctx.createGain(); gn.gain.value=1.1;
+    ns.connect(hp); hp.connect(pk); pk.connect(lp); lp.connect(gn); gn.connect(bgGain);
+    ctx.resume().then(function(){ ns.start(0); });
+    bgNodes.push(ns);
+
   } else if(id==='forest'){
-    // 森の音：風のみ（水系なし）＋鳥＋虫
-    // 風：超低周波LFOで揺れるバンドノイズ（葉ずれ）
-    var bs=ctx.sampleRate*4,wb=ctx.createBuffer(1,bs,ctx.sampleRate),wd=wb.getChannelData(0);
-    for(var i=0;i<bs;i++)wd[i]=Math.random()*2-1;
-    // 葉ずれ成分（800〜3000Hz）
-    var wn1=ctx.createBufferSource();wn1.buffer=wb;wn1.loop=true;
-    var bp_leaf=ctx.createBiquadFilter();bp_leaf.type='bandpass';bp_leaf.frequency.value=1400;bp_leaf.Q.value=0.7;
-    var gLeaf=ctx.createGain();gLeaf.gain.value=0.35;
-    // 風のゆらぎLFO
-    var lfo1=ctx.createOscillator();lfo1.frequency.value=0.06;
-    var lfoG1=ctx.createGain();lfoG1.gain.value=0.25;
-    lfo1.connect(lfoG1);lfoG1.connect(gLeaf.gain);
-    wn1.connect(bp_leaf);bp_leaf.connect(gLeaf);gLeaf.connect(bgGain);
-    // 風の低音うねり（50〜300Hz）
-    var wn2=ctx.createBufferSource();wn2.buffer=wb;wn2.loop=true;
-    var bp_wind=ctx.createBiquadFilter();bp_wind.type='bandpass';bp_wind.frequency.value=120;bp_wind.Q.value=0.4;
-    var gWind=ctx.createGain();gWind.gain.value=0.2;
-    var lfo2=ctx.createOscillator();lfo2.frequency.value=0.04;
-    var lfoG2=ctx.createGain();lfoG2.gain.value=0.15;
-    lfo2.connect(lfoG2);lfoG2.connect(gWind.gain);
-    wn2.connect(bp_wind);bp_wind.connect(gWind);gWind.connect(bgGain);
-    ctx.resume().then(function(){wn1.start(0);wn2.start(0);lfo1.start(0);lfo2.start(0);});
+    // 森の音：風（葉ずれ）のみ＋鳥＋虫（水系ゼロ）
+    var bs=ctx.sampleRate*6,wb=ctx.createBuffer(1,bs,ctx.sampleRate),wd=wb.getChannelData(0);
+    // ピンクノイズで自然な風音
+    var b0=0,b1=0,b2=0,b3=0,b4=0,b5=0;
+    for(var i=0;i<bs;i++){
+      var w=Math.random()*2-1;
+      b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759;
+      b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856;
+      b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
+      wd[i]=Math.max(-1,Math.min(1,(b0+b1+b2+b3+b4+b5+w*0.5362)*0.11));
+    }
+    // 葉ずれ：1000〜3000Hz帯域
+    var wn1=ctx.createBufferSource(); wn1.buffer=wb; wn1.loop=true;
+    var bp1=ctx.createBiquadFilter(); bp1.type='bandpass'; bp1.frequency.value=1600; bp1.Q.value=1.2;
+    var gL=ctx.createGain(); gL.gain.value=0.45;
+    var lfo1=ctx.createOscillator(); lfo1.type='sine'; lfo1.frequency.value=0.05;
+    var lg1=ctx.createGain(); lg1.gain.value=0.3;
+    lfo1.connect(lg1); lg1.connect(gL.gain);
+    wn1.connect(bp1); bp1.connect(gL); gL.connect(bgGain);
+    // 風の息づかい：80〜250Hz　ゆっくり強弱
+    var wn2=ctx.createBufferSource(); wn2.buffer=wb; wn2.loop=true;
+    var bp2=ctx.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=140; bp2.Q.value=0.5;
+    var gW=ctx.createGain(); gW.gain.value=0.18;
+    var lfo2=ctx.createOscillator(); lfo2.type='sine'; lfo2.frequency.value=0.03;
+    var lg2=ctx.createGain(); lg2.gain.value=0.12;
+    lfo2.connect(lg2); lg2.connect(gW.gain);
+    wn2.connect(bp2); bp2.connect(gW); gW.connect(bgGain);
+    ctx.resume().then(function(){ wn1.start(0); wn2.start(0); lfo1.start(0); lfo2.start(0); });
     bgNodes.push(wn1,wn2,lfo1,lfo2);
-    // 鳥のさえずり（クリアな高音域）
     chirps(ctx,bgGain);
-    // 虫の鳴き声（低め・断続的）
     insects(ctx,bgGain);
   } else if(id==='bowl'){
     var bHz=FREQS[fi].hz;
