@@ -284,160 +284,239 @@ BGMS.forEach(function(b){
   bgmWrap.appendChild(btn);
 });
 
-// ══ 釣り人アニメーション ══════════════════════
+// ══ スケボーアニメーション ══════════════════════
 var stg=document.getElementById('stage'),sc=stg.getContext('2d');
 var sT=0,isRun=false;
+var W=280,H=120;
+stg.width=W; stg.height=H;
 
-function ln(a,b){sc.beginPath();sc.moveTo(a.x,a.y);sc.lineTo(b.x,b.y);sc.stroke();}
-function circle(x,y,r){sc.beginPath();sc.arc(x,y,r,0,Math.PI*2);sc.stroke();}
-function fillCircle(x,y,r){sc.beginPath();sc.arc(x,y,r,0,Math.PI*2);sc.fill();}
+function drawSkater(t, active){
+  sc.clearRect(0,0,W,H);
+  var ph = t*0.018;
+  var spd = active ? 1.0 : 0.35; // 再生中は速く滑る
+  var scrollX = (t * spd * 0.7) % 300;
 
-function drawFisher(t, active){
-  sc.clearRect(0,0,stg.width,stg.height);
-  sc.lineCap='round'; sc.lineJoin='round';
+  // ━━ 空 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  var skyG = sc.createLinearGradient(0,0,0,55);
+  if(active){
+    skyG.addColorStop(0,'#1a6ab5');
+    skyG.addColorStop(1,'#6db8e8');
+  } else {
+    skyG.addColorStop(0,'#1a2030');
+    skyG.addColorStop(1,'#2a3545');
+  }
+  sc.fillStyle=skyG; sc.fillRect(0,0,W,55);
 
-  var col   = active ? FREQS[fi].color : '#4a4655';
-  var colA  = active ? 'rgba(200,169,110,' : 'rgba(74,70,85,';
-  var ph    = t * 0.008; // 非常にゆっくり
-
-  // ━━ 背景：水面 ━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 水面グラデーション
-  var wGrad = sc.createLinearGradient(0,58,0,82);
-  wGrad.addColorStop(0, active?'rgba(40,80,120,0.28)':'rgba(40,50,70,0.18)');
-  wGrad.addColorStop(1, active?'rgba(20,50,90,0.10)':'rgba(20,30,50,0.08)');
-  sc.fillStyle=wGrad;
-  sc.fillRect(0,58,280,24);
-
-  // 水面のさざ波（3本・周期ずらし）
-  sc.lineWidth=0.7;
-  for(var wi=0;wi<3;wi++){
-    sc.strokeStyle = active
-      ? 'rgba(100,160,220,'+(0.18-wi*0.04)+')'
-      : 'rgba(80,90,110,'+(0.12-wi*0.03)+')';
-    sc.beginPath();
-    for(var wx=0;wx<280;wx+=2){
-      var wy=60+wi*5+Math.sin(wx*0.035+ph*2.5+wi*1.2)*1.4;
-      wx===0?sc.moveTo(wx,wy):sc.lineTo(wx,wy);
-    }
-    sc.stroke();
+  // 雲（視差スクロール）
+  if(active){
+    sc.fillStyle='rgba(255,255,255,0.85)';
+    var clouds=[{x:30,y:8,w:38,h:12},{x:110,y:5,w:52,h:15},{x:200,y:10,w:34,h:10}];
+    clouds.forEach(function(c){
+      var cx=(c.x - scrollX*0.15 + 300)%300;
+      sc.beginPath();
+      sc.ellipse(cx,     c.y,   c.w*0.5, c.h*0.5, 0,0,Math.PI*2);
+      sc.ellipse(cx+c.w*0.3, c.y-3, c.w*0.35,c.h*0.45,0,0,Math.PI*2);
+      sc.ellipse(cx-c.w*0.25,c.y+2, c.w*0.3, c.h*0.4, 0,0,Math.PI*2);
+      sc.fill();
+    });
   }
 
-  // 岸辺のライン
-  sc.strokeStyle = active ? 'rgba(160,130,80,0.35)' : 'rgba(80,75,85,0.25)';
-  sc.lineWidth=2;
+  // ━━ 遠景：海 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if(active){
+    var seaG=sc.createLinearGradient(0,30,0,56);
+    seaG.addColorStop(0,'#1a8ac8'); seaG.addColorStop(1,'#0d5f9a');
+    sc.fillStyle=seaG;
+    sc.beginPath();
+    sc.moveTo(60,30); sc.lineTo(W,28); sc.lineTo(W,56); sc.lineTo(0,56); sc.closePath();
+    sc.fill();
+    // 波頭
+    sc.strokeStyle='rgba(255,255,255,0.55)'; sc.lineWidth=1.2;
+    [0,1,2].forEach(function(i){
+      var wx=(80+i*70 - scrollX*0.4 + 300)%300;
+      sc.beginPath();
+      sc.moveTo(wx,40+i*3);
+      sc.quadraticCurveTo(wx+10,37+i*3, wx+20,40+i*3);
+      sc.stroke();
+    });
+  } else {
+    sc.fillStyle='#0d1520';
+    sc.fillRect(0,30,W,26);
+  }
+
+  // ━━ 遠景：山・街並み ━━━━━━━━━━━━━━━━━━━━━━
+  if(active){
+    // 山
+    sc.fillStyle='#2d6b30';
+    sc.beginPath();
+    sc.moveTo(0,48); sc.lineTo(30,25); sc.lineTo(70,42); sc.lineTo(0,56); sc.closePath(); sc.fill();
+    // 建物群（小さく）
+    sc.fillStyle='rgba(180,140,90,0.6)';
+    [0,1,2,3,4].forEach(function(i){
+      var bx=(20+i*45 - scrollX*0.25 + 300)%300;
+      if(bx>230) return;
+      sc.fillRect(bx,44,8,8);
+    });
+  } else {
+    sc.fillStyle='#0f1a10';
+    sc.beginPath();
+    sc.moveTo(0,48); sc.lineTo(30,28); sc.lineTo(70,44); sc.lineTo(0,56); sc.closePath(); sc.fill();
+  }
+
+  // ━━ 道路（遠近感のある坂道） ━━━━━━━━━━━━━━━
+  var roadCol  = active ? '#c8a86a' : '#2a2535';
+  var roadCol2 = active ? '#b89858' : '#201c2a';
+  // 道路本体
+  sc.fillStyle=roadCol;
   sc.beginPath();
-  sc.moveTo(30,58); sc.lineTo(170,58);
-  sc.stroke();
+  sc.moveTo(90,55); sc.lineTo(190,55);  // 地平線上の道幅
+  sc.lineTo(W,H);   sc.lineTo(0,H);
+  sc.closePath(); sc.fill();
 
-  // ━━ 人物（px=105, 岸に座る） ━━━━━━━━━━━━━
-  var px=105;
-  // 呼吸：sin波でごくわずかに上下
-  var br = Math.sin(ph*1.6)*1.0;
-
-  sc.strokeStyle=col; sc.lineWidth=2;
-
-  // 頭（少し前傾き）
-  var hx=px+2, hy=24+br;
-  circle(hx, hy, 7.5);
-
-  // 首〜胴体（前傾姿勢）
-  var nkX=px+1,  nkY=hy+7.5+br;
-  var chX=px-1,  chY=nkY+10+br; // 胸
-  var hpX=px-3,  hpY=chY+12+br; // 腰
-
-  // 背骨（首〜胸〜腰）
-  sc.beginPath(); sc.moveTo(nkX,nkY); sc.quadraticCurveTo(chX+2,chY,hpX,hpY); sc.stroke();
-
-  // 右腕（竿を持ち上げ・肘を軽く曲げる）
-  var rodSway = Math.sin(ph)*2.5; // 竿のゆらぎ
-  var rShX=px+6,  rShY=nkY+4+br;
-  var rElX=px+15, rElY=nkY+0+br+rodSway*0.4;
-  var rHdX=px+22, rHdY=nkY-6+br+rodSway*0.7;
-  sc.lineWidth=1.8;
-  ln({x:rShX,y:rShY},{x:rElX,y:rElY});
-  ln({x:rElX,y:rElY},{x:rHdX,y:rHdY});
-
-  // 左腕（膝の上で休む）
-  var lShX=px-4, lShY=nkY+4+br;
-  var lElX=px-10,lElY=nkY+12+br;
-  var lHdX=px-6, lHdY=nkY+20+br;
-  ln({x:lShX,y:lShY},{x:lElX,y:lElY});
-  ln({x:lElX,y:lElY},{x:lHdX,y:lHdY});
-
-  // 脚（座り姿勢：太もも→ひざ→すね）
-  sc.lineWidth=2;
-  // 右脚
-  var rThX=hpX+6, rThY=hpY+2+br;
-  var rKnX=hpX+16,rKnY=hpY+12+br;
-  var rFtX=hpX+22,rFtY=hpY+20+br;
-  ln({x:hpX,y:hpY},{x:rThX,y:rThY});
-  ln({x:rThX,y:rThY},{x:rKnX,y:rKnY});
-  ln({x:rKnX,y:rKnY},{x:rFtX,y:rFtY});
-  // 左脚
-  var lThX=hpX-4, lThY=hpY+3+br;
-  var lKnX=hpX+6, lKnY=hpY+14+br;
-  var lFtX=hpX+14,lFtY=hpY+22+br;
-  ln({x:hpX,y:hpY},{x:lThX,y:lThY});
-  ln({x:lThX,y:lThY},{x:lKnX,y:lKnY});
-  ln({x:lKnX,y:lKnY},{x:lFtX,y:lFtY});
-
-  // ━━ 釣り竿 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 竿：手元(rHd)から右上方向に長くしなる
-  var rodTipX = rHdX+100+rodSway;
-  var rodTipY = rHdY-22+rodSway*0.3;
-  // 竿を3点ベジェでしなり表現
-  sc.strokeStyle=col; sc.lineWidth=1.4;
+  // 道路の影（奥側）
+  sc.fillStyle=roadCol2;
   sc.beginPath();
-  sc.moveTo(rHdX, rHdY);
-  sc.bezierCurveTo(
-    rHdX+35, rHdY-8+rodSway*0.3,
-    rHdX+70, rHdY-18+rodSway*0.5,
-    rodTipX, rodTipY
-  );
-  sc.stroke();
+  sc.moveTo(90,55); sc.lineTo(190,55); sc.lineTo(185,65); sc.lineTo(95,65);
+  sc.closePath(); sc.fill();
 
-  // 竿先のガイドリング（小さい丸）
-  sc.strokeStyle=colA+'0.5)'; sc.lineWidth=0.8;
-  circle(rodTipX, rodTipY, 2);
-
-  // ━━ 糸 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  var lineSway = Math.sin(ph*0.7+0.5)*5;
-  var lineEndX = rodTipX+18+lineSway;
-  var lineEndY = 62;
-
-  sc.strokeStyle = active
-    ? 'rgba(200,169,110,0.55)'
-    : 'rgba(100,95,110,0.35)';
-  sc.lineWidth=0.7;
+  // センターライン（視差スクロール）
+  sc.strokeStyle = active ? 'rgba(255,255,255,0.7)' : 'rgba(80,75,90,0.5)';
+  sc.lineWidth=1.5; sc.setLineDash([8,10]);
   sc.beginPath();
-  sc.moveTo(rodTipX+1, rodTipY+2);
-  sc.quadraticCurveTo(rodTipX+25, rodTipY+18, lineEndX, lineEndY);
-  sc.stroke();
+  sc.moveTo(140,55); sc.lineTo(W/2, H);
+  sc.stroke(); sc.setLineDash([]);
 
-  // ━━ ウキ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  var bobY = lineEndY + Math.sin(ph*1.3)*1.2;
+  // 路肩ライン
+  sc.strokeStyle = active ? 'rgba(255,255,255,0.4)' : 'rgba(60,55,70,0.3)';
+  sc.lineWidth=1;
+  sc.beginPath(); sc.moveTo(100,55); sc.lineTo(30,H); sc.stroke();
+  sc.beginPath(); sc.moveTo(180,55); sc.lineTo(250,H); sc.stroke();
 
-  // ウキ本体（楕円・上赤下白）
+  // ━━ 電柱（スクロール） ━━━━━━━━━━━━━━━━━━━━
+  if(active){
+    sc.strokeStyle='rgba(60,45,30,0.8)'; sc.lineWidth=1.5;
+    [0,1,2].forEach(function(i){
+      var px=(40+i*110 - scrollX*0.6 + 330)%330;
+      if(px<0||px>W) return;
+      var topY=18, botY=H-10;
+      sc.beginPath(); sc.moveTo(px,topY); sc.lineTo(px+3,botY); sc.stroke();
+      // 横木
+      sc.beginPath(); sc.moveTo(px-8,topY+6); sc.lineTo(px+11,topY+6); sc.stroke();
+      // 電線
+      sc.strokeStyle='rgba(30,20,10,0.5)'; sc.lineWidth=0.6;
+      if(i<2){
+        var nx=(40+(i+1)*110 - scrollX*0.6 + 330)%330;
+        sc.beginPath();
+        sc.moveTo(px+1,topY+4);
+        sc.quadraticCurveTo((px+nx)/2, topY+14, nx+1, topY+4);
+        sc.stroke();
+      }
+      sc.strokeStyle='rgba(60,45,30,0.8)'; sc.lineWidth=1.5;
+    });
+  }
+
+  // ━━ キャラクター（スケボー） ━━━━━━━━━━━━━━━
+  // 画面中央やや下、坂道上に乗る
+  var cx=W/2, cy=H-32;
+  var bob = Math.sin(ph*3)*1.2; // 滑走の上下
+  var lean= active ? Math.sin(ph*1.2)*3 : 0; // 体の左右傾き
+
   sc.save();
-  sc.translate(lineEndX, bobY);
-  // 赤い上部
-  sc.fillStyle = active ? 'rgba(210,70,50,0.9)' : 'rgba(110,80,80,0.5)';
-  sc.beginPath(); sc.ellipse(0,-2.5,2.5,4,0,0,Math.PI*2); sc.fill();
-  // 白い下部
-  sc.fillStyle = active ? 'rgba(230,220,200,0.85)' : 'rgba(130,125,135,0.45)';
-  sc.beginPath(); sc.ellipse(0,2.5,2,3.5,0,0,Math.PI*2); sc.fill();
-  // ウキの細い中軸線
-  sc.strokeStyle = active ? 'rgba(200,169,110,0.6)' : 'rgba(100,95,110,0.3)';
-  sc.lineWidth=0.6;
-  sc.beginPath(); sc.moveTo(0,-6); sc.lineTo(0,6); sc.stroke();
+  sc.translate(cx, cy+bob);
+  sc.rotate(lean*Math.PI/180);
+
+  // スケボー板
+  sc.fillStyle= active ? '#3a2a10' : '#1a1520';
+  sc.beginPath();
+  sc.roundRect ? sc.roundRect(-14,16,28,5,2)
+               : (sc.rect(-14,16,28,5));
+  sc.fill();
+  // ウィール
+  sc.fillStyle= active ? '#228844' : '#1a2030';
+  [-9,7].forEach(function(wx){
+    sc.beginPath(); sc.arc(wx,22,2.5,0,Math.PI*2); sc.fill();
+  });
+
+  // 脚（スケボーに乗る）
+  // 後ろ脚（右）
+  sc.strokeStyle= active ? '#4a6aaa' : '#2a2540';
+  sc.lineWidth=3.5; sc.lineCap='round';
+  sc.beginPath(); sc.moveTo(4,0); sc.lineTo(6,8); sc.lineTo(7,16); sc.stroke();
+  // 前脚（左）
+  sc.beginPath(); sc.moveTo(-3,0); sc.lineTo(-5,8); sc.lineTo(-8,16); sc.stroke();
+
+  // 靴
+  sc.strokeStyle= active ? '#e8e0d0' : '#3a3545';
+  sc.lineWidth=2.5;
+  sc.beginPath(); sc.moveTo(7,16); sc.lineTo(13,17); sc.stroke();
+  sc.beginPath(); sc.moveTo(-8,16); sc.lineTo(-13,17); sc.stroke();
+
+  // 胴体（青シャツ）
+  sc.strokeStyle= active ? '#3a7acc' : '#1a2545';
+  sc.lineWidth=4;
+  sc.beginPath(); sc.moveTo(0,0); sc.lineTo(0,-14); sc.stroke();
+
+  // リュック（オレンジ）
+  sc.fillStyle= active ? '#e07820' : '#302030';
+  sc.beginPath();
+  sc.roundRect ? sc.roundRect(1,-13,9,10,2)
+               : sc.rect(1,-13,9,10);
+  sc.fill();
+  sc.strokeStyle= active ? '#c86010' : '#251825';
+  sc.lineWidth=1;
+  // リュックのストラップ
+  sc.beginPath(); sc.moveTo(2,-13); sc.lineTo(0,-4); sc.stroke();
+
+  // 腕（バランスとる）
+  var armSwing = active ? Math.sin(ph*2)*12 : 5;
+  sc.strokeStyle= active ? '#3a7acc' : '#1a2545';
+  sc.lineWidth=2.5;
+  // 右腕
+  sc.beginPath(); sc.moveTo(2,-10);
+  sc.lineTo(12+armSwing*0.4, -6+armSwing*0.2); sc.stroke();
+  // 左腕
+  sc.beginPath(); sc.moveTo(-2,-10);
+  sc.lineTo(-12-armSwing*0.3, -5-armSwing*0.15); sc.stroke();
+
+  // 首
+  sc.strokeStyle= active ? '#d4a882' : '#2a2035';
+  sc.lineWidth=2.5;
+  sc.beginPath(); sc.moveTo(0,-14); sc.lineTo(-1,-18); sc.stroke();
+
+  // 頭（茶髪）
+  sc.fillStyle= active ? '#5a3010' : '#1a1520';
+  sc.beginPath(); sc.arc(-1,-23,7,0,Math.PI*2); sc.fill();
+  // 髪の毛（ぼさぼさ）
+  sc.fillStyle= active ? '#3a1a05' : '#120e15';
+  sc.beginPath(); sc.arc(-1,-27,5,Math.PI,Math.PI*2); sc.fill();
+  sc.beginPath(); sc.arc(-6,-24,3,Math.PI*1.2,Math.PI*1.9); sc.fill();
+  // 顔（後ろ向き）
+  sc.fillStyle= active ? '#d4a882' : '#2a2035';
+  sc.beginPath(); sc.arc(-1,-22,4.5,0,Math.PI*2); sc.fill();
+
+  // 影（地面）
+  sc.fillStyle='rgba(0,0,0,0.12)';
+  sc.beginPath(); sc.ellipse(0,22,12,3,0,0,Math.PI*2); sc.fill();
+
   sc.restore();
 
-  // ウキの水面反射（小さな楕円）
-  sc.fillStyle = active ? 'rgba(100,160,220,0.15)' : 'rgba(60,60,80,0.10)';
-  sc.beginPath(); sc.ellipse(lineEndX, bobY+7, 4, 1.5, 0, 0, Math.PI*2); sc.fill();
+  // ━━ 前景：路肩の草・石（視差） ━━━━━━━━━━━━━
+  if(active){
+    sc.fillStyle='rgba(50,100,40,0.7)';
+    [0,1,2,3].forEach(function(i){
+      var gx=(10+i*80 - scrollX*1.2 + 400)%400;
+      if(gx>W) return;
+      sc.beginPath(); sc.ellipse(gx, H-4, 6,3,0,0,Math.PI*2); sc.fill();
+    });
+    sc.fillStyle='rgba(160,140,100,0.5)';
+    [0,1,2].forEach(function(i){
+      var sx=(50+i*100 - scrollX + 400)%400;
+      if(sx>W) return;
+      sc.beginPath(); sc.ellipse(sx, H-6, 4,2.5,0,0,Math.PI*2); sc.fill();
+    });
+  }
 }
 
-(function loop(){ sT++; drawFisher(sT, isRun); requestAnimationFrame(loop); })();
+(function loop(){ sT++; drawSkater(sT, isRun); requestAnimationFrame(loop); })();
 
 // ══ Audio ═══════════════════════════════════
 var actx=null,tSrc=null,tGain=null,bgGain=null,bgNodes=[];
